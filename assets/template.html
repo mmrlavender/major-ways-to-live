@@ -1,0 +1,329 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root{
+    --cream:#FCFFEA;
+    --green:#AAECA7;
+    --green-2:#D6F5C8;
+    --ink:#12263A;
+    --ink-2:#40566E;
+    --blue:#3D8DCD;
+    --blue-deep:#1A73BB;
+    --pink:#F8D3BF;
+    --line:#E3E9DA;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.65;
+  }
+  .page{max-width:880px;margin:0 auto;padding:0 0 56px}
+
+  /* 页眉 */
+  .kicker{display:flex;align-items:center;gap:12px;padding:20px 20px 12px}
+  .kicker .num{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:52px;height:38px;padding:0 10px;border-radius:10px;
+    background:var(--green);color:#0F3D1B;font-weight:800;font-size:20px;letter-spacing:.5px;
+  }
+  .kicker .kicker-label{font-size:15px;font-weight:700;color:var(--ink-2);letter-spacing:2px}
+
+  /* 引导区 */
+  .hero{
+    position:relative;margin:0 12px;padding:26px 22px 30px;border-radius:22px;
+    background:linear-gradient(160deg,var(--green) 0%,#C6F2B6 55%,var(--green-2) 100%);
+    overflow:hidden;
+  }
+  .hero .leads p{margin:0 0 6px;font-size:15px;color:#16401F}
+  .hero .leads p.lead{font-size:17px;font-weight:800;color:#0E3517}
+  .hero .leads em{font-style:normal;background:#fff;border-radius:6px;padding:0 4px}
+  .ico{margin-right:2px}
+
+  .title{
+    margin:24px 0 8px;font-size:34px;line-height:1.25;font-weight:900;color:#0E3517;letter-spacing:-.5px;
+  }
+  .title .q{color:#fff;background:#0E3517;border-radius:8px;padding:0 6px;margin:0 2px;font-style:normal}
+  .tagline{margin:0 0 20px;font-size:14px;color:#23512C;max-width:34em}
+
+  .bubbles{display:flex;flex-wrap:wrap;gap:10px}
+  .bubble{
+    position:relative;background:#fff;color:var(--ink);border-radius:16px;
+    padding:9px 14px;font-size:14px;font-weight:600;
+    box-shadow:0 4px 0 rgba(16,54,23,.12);
+  }
+  .bubble::after{
+    content:"";position:absolute;left:18px;bottom:-7px;width:12px;height:12px;background:#fff;
+    transform:rotate(45deg);border-radius:2px;
+  }
+
+  /* 插画区 */
+  .stage{margin:16px 12px 0;border-radius:22px;overflow:hidden;box-shadow:0 8px 24px rgba(18,38,58,.10)}
+  .stage svg{display:block;width:100%;height:auto}
+  .stage-hint{
+    background:#fff;color:var(--ink-2);font-size:13px;text-align:center;
+    padding:10px 14px;border-top:1px solid var(--line);
+  }
+
+  /* 卡片 */
+  .paths{padding:22px 12px 0;display:grid;gap:12px}
+  .card{
+    background:#fff;border-radius:16px;border:1px solid var(--line);
+    border-left:6px solid var(--bar,#1A73BB);
+    box-shadow:0 2px 10px rgba(18,38,58,.05);overflow:hidden;
+  }
+  .card summary{
+    display:grid;grid-template-columns:auto 1fr;grid-template-areas:"idx title" "idx oneline";
+    gap:2px 10px;align-items:center;cursor:pointer;padding:14px 16px;list-style:none;
+  }
+  .card summary::-webkit-details-marker{display:none}
+  .card .idx{
+    grid-area:idx;align-self:center;font-weight:900;font-size:18px;color:var(--bar,#1A73BB);
+    background:color-mix(in srgb, var(--bar,#1A73BB) 12%, #fff);border-radius:10px;
+    width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+  }
+  .card .c-title{grid-area:title;font-size:17px;font-weight:800;color:var(--ink)}
+  .card .c-oneline{grid-area:oneline;font-size:13.5px;color:var(--ink-2)}
+  .card[open] summary{border-bottom:1px dashed var(--line)}
+  .c-body{padding:14px 16px 16px}
+  .c-body dl{margin:0;display:grid;gap:10px}
+  .c-body dt{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--bar,#1A73BB);margin-bottom:2px}
+  .c-body dd{margin:0;font-size:14px;color:var(--ink)}
+  .c-body ul{margin:0;padding-left:18px;font-size:14px}
+  .c-body li{margin:2px 0}
+  .next{
+    margin:14px 0 0;padding:12px 14px;border-radius:12px;background:var(--cream);
+    font-size:14px;color:#1F4A2A;border:1px dashed #C9E3BE;
+  }
+  .next b{display:block;font-size:12px;letter-spacing:1px;color:#2E7D46;margin-bottom:3px}
+
+  .c-title{display:flex;align-items:center;gap:8px}
+  .card .fit{
+    display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;
+    background:var(--bar,#1A73BB);color:#fff;font-size:11.5px;font-weight:800;letter-spacing:.5px;
+  }
+  .why dd{color:#1F4A2A;font-weight:600}
+  .c-body .bridge dd{color:#1F4A2A;background:#F4FBEF;border-left:3px solid var(--green);padding:7px 11px;border-radius:8px;font-weight:600}
+  #paths.grouped{display:block}
+  .grp{margin:0 0 24px}
+  .grp-title{margin:0;font-size:18px;font-weight:900;color:#0E3517;letter-spacing:-.2px}
+  .grp-desc{margin:4px 0 12px;font-size:13px;color:var(--ink-2)}
+  .grp-cards{display:grid;gap:12px}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;padding:20px 12px 0}
+  .fbtn{
+    appearance:none;border:1px solid #CBE7C2;background:#fff;color:#23512C;font:inherit;
+    font-size:13px;font-weight:700;border-radius:999px;padding:5px 13px;cursor:pointer;
+    box-shadow:0 2px 0 rgba(16,54,23,.08);
+  }
+  .fbtn:hover{background:#F4FBEF}
+  .fbtn.on{background:var(--blue-deep);border-color:var(--blue-deep);color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+  .chip{
+    background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;color:#23512C;
+    box-shadow:0 2px 0 rgba(16,54,23,.10);
+  }
+  footer{margin:26px 12px 0;text-align:center;font-size:13px;color:#7C8A76}
+  footer .foot-lead{font-size:14px;font-weight:700;color:#2E7D46;margin:0 0 6px}
+
+  @media (min-width:720px){
+    .title{font-size:44px}
+    .hero{padding:34px 34px 36px}
+    .stage{margin:18px 16px 0}
+    .paths{padding:26px 16px 0;grid-template-columns:1fr 1fr}
+    .grp-cards{grid-template-columns:1fr 1fr}
+    .card summary{grid-template-columns:auto 1fr}
+  }
+  @media print{
+    .stage{box-shadow:none}
+    .card{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="kicker">
+    <span class="num">__INDEX__</span>
+    <span class="kicker-label">专业的 N 种活法</span>
+  </header>
+
+  <section class="hero">
+    <div class="leads">
+      <p class="lead"><span class="ico">⚡</span>你的专业，毕业后到底能做什么？</p>
+      <p>别让<em>“学什么”</em>限制了<em>“能做什么”</em>。</p>
+      <p><span class="ico">✏️</span>输入你的专业，让 AI 帮你探索更多职业去向！</p>
+      <p>换个角度看专业，原来未来有这么多种可能。</p>
+    </div>
+
+    <h1 class="title" id="h1"><span id="major">__MAJOR__</span>的<span class="q">N</span>种“活法”</h1>
+    <p class="tagline">打破“一考定终身”的刻板印象，拓宽专业发展视野，加强探索的主动性与好奇心</p>
+    <div class="chips" id="chips"></div>
+
+    <div class="bubbles">
+      <div class="bubble">我的优势是什么？</div>
+      <div class="bubble">我的专业可以做什么？</div>
+      <div class="bubble">该职业需要什么样的特质呢？</div>
+    </div>
+  </section>
+
+  <section class="stage">
+    <svg viewBox="0 0 800 360" role="img" aria-label="插画：一位戴眼镜的女生在用笔记本探索自己的职业方向">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4E9AD8"/><stop offset="1" stop-color="#1A73BB"/>
+        </linearGradient>
+      </defs>
+      <rect width="800" height="360" fill="url(#sky)"/>
+      <!-- 远处山形 -->
+      <path d="M0 300 L110 216 L215 300 Z" fill="#2C6FA8" opacity=".55"/>
+      <path d="M150 300 L300 188 L460 300 Z" fill="#2C6FA8" opacity=".4"/>
+      <path d="M420 300 L560 200 L710 300 Z" fill="#2C6FA8" opacity=".5"/>
+      <!-- 底部粉橙山丘 -->
+      <path d="M0 360 L90 316 L180 360 Z" fill="#F8D3BF"/>
+      <path d="M600 360 L700 312 L800 360 Z" fill="#F8D3BF"/>
+      <rect y="330" width="800" height="30" fill="#F8D3BF" opacity=".85"/>
+      <!-- 绿植 -->
+      <g fill="#7BD07A">
+        <path d="M78 332 q-6-30 12-44 q10 22-2 44 z"/>
+        <path d="M92 332 q10-26 30-30 q-6 24-22 30 z"/>
+        <ellipse cx="86" cy="334" rx="26" ry="6" fill="#3E9B52" opacity=".5"/>
+        <path d="M712 334 q-4-26 10-38 q9 19-1 38 z"/>
+        <ellipse cx="716" cy="336" rx="20" ry="5" fill="#3E9B52" opacity=".5"/>
+      </g>
+      <!-- 人物 -->
+      <g>
+        <ellipse cx="400" cy="332" rx="118" ry="14" fill="#14507F" opacity=".45"/>
+        <path d="M330 332 q0-92 70-92 t70 92 z" fill="#FCFFEA"/>
+        <circle cx="400" cy="198" r="47" fill="#F8D3BF"/>
+        <path d="M353 196 a47 47 0 0 1 94 0 q-8-32-47-32 t-47 32 z" fill="#2B2B33"/>
+        <circle cx="355" cy="180" r="15" fill="#2B2B33"/>
+        <circle cx="447" cy="180" r="15" fill="#2B2B33"/>
+        <circle cx="384" cy="198" r="12" fill="none" stroke="#12263A" stroke-width="3"/>
+        <circle cx="416" cy="198" r="12" fill="none" stroke="#12263A" stroke-width="3"/>
+        <line x1="396" y1="198" x2="404" y2="198" stroke="#12263A" stroke-width="3"/>
+        <path d="M391 216 q9 8 18 0" fill="none" stroke="#B4573E" stroke-width="3" stroke-linecap="round"/>
+        <!-- 笔记本 -->
+        <rect x="332" y="272" width="136" height="58" rx="8" fill="#E8EDF3" stroke="#12263A" stroke-width="3"/>
+        <rect x="344" y="281" width="112" height="30" rx="4" fill="#FCFFEA"/>
+        <line x1="354" y1="292" x2="424" y2="292" stroke="#9FB0C2" stroke-width="3" stroke-linecap="round"/>
+        <line x1="354" y1="301" x2="404" y2="301" stroke="#9FB0C2" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <!-- 对话气泡 -->
+      <g>
+        <rect x="120" y="70" width="176" height="52" rx="16" fill="#FCFFEA"/>
+        <path d="M150 122 l0 16 l16 -16 z" fill="#FCFFEA"/>
+        <text x="140" y="103" font-size="18" font-weight="700" fill="#12263A" font-family="inherit">我的优势是什么？</text>
+
+        <rect x="500" y="96" width="200" height="52" rx="16" fill="#FCFFEA"/>
+        <path d="M556 148 l0 16 l16 -16 z" fill="#FCFFEA"/>
+        <text x="518" y="129" font-size="18" font-weight="700" fill="#12263A" font-family="inherit">专业能做什么？</text>
+
+        <rect x="470" y="196" width="212" height="52" rx="16" fill="#FCFFEA"/>
+        <path d="M520 248 l0 16 l16 -16 z" fill="#FCFFEA"/>
+        <text x="488" y="229" font-size="18" font-weight="700" fill="#12263A" font-family="inherit">需要什么特质呢？</text>
+      </g>
+    </svg>
+    <div class="stage-hint">往下点开任意一条活法，看它要什么、难在哪、这周能做什么</div>
+  </section>
+
+  <nav class="filters" id="filters"></nav>
+  <main class="paths" id="paths"></main>
+
+  <footer>
+    <p class="foot-lead">原来未来有这么多种可能 · 先走一步，再走下一步</p>
+    <p id="foot-meta"></p>
+  </footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/;
+</script>
+<script>
+(function(){
+  var COLORS = {core:"#1A73BB", public:"#2E9E5B", hybrid:"#C98A12", media:"#B14AA0", ops:"#3D8DCD", switch:"#7A6BD6"};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function list(a){return (a||[]).map(function(x){return "<li>"+esc(x)+"</li>";}).join("");}
+  var paths = (DATA.paths||[]);
+  if (DATA.headline) {
+    document.getElementById("h1").textContent = DATA.headline;
+    document.title = DATA.headline;
+  } else {
+    document.getElementById("major").textContent = DATA.major || "";
+    document.title = (DATA.major||"专业") + "的N种活法";
+  }
+  var chips = (DATA.profileChips || []);
+  document.getElementById("chips").innerHTML = chips.map(function(c){return '<span class="chip">'+esc(c)+'</span>';}).join("");
+  function cardHtml(p, i) {
+    var bar = COLORS[p.family] || "#1A73BB";
+    return '<details class="card" data-cat="'+esc(p.category||"")+'" style="--bar:'+bar+'"'+(i===0?" open":"")+'>'
+      + '<summary><span class="idx">'+String(i+1).padStart(2,"0")+'</span>'
+      + '<span class="c-title">'+esc(p.name)+(p.fit?'<b class="fit">'+esc(p.fit)+'</b>':'')+'</span>'
+      + '<span class="c-oneline">'+esc(p.oneline)+'</span></summary>'
+      + '<div class="c-body"><dl>'
+      + (p.why ? '<div class="why"><dt>为什么适合你</dt><dd>'+esc(p.why)+'</dd></div>' : '')
+      + (p.bridge ? '<div class="bridge"><dt>跟你的专业怎么搭</dt><dd>'+esc(p.bridge)+'</dd></div>' : '') + (p.category ? '<div><dt>方向</dt><dd>'+esc(p.category)+'</dd></div>' : '') + '<div><dt>典型岗位</dt><dd>'+esc((p.roles||[]).join(" · "))+'</dd></div>'
+      + '<div><dt>关键能力</dt><dd><ul>'+list(p.skills)+'</ul></dd></div>'
+      + '<div><dt>怎么进去</dt><dd>'+esc(p.access)+'</dd></div>'
+      + '<div><dt>适合谁</dt><dd>'+esc(p.match)+'</dd></div>'
+      + '<div><dt>代价与风险</dt><dd>'+esc(p.cost)+'</dd></div>'
+      + '</dl><p class="next"><b>这周就能做的一步</b>'+esc(p.next)+'</p></div>'
+      + '</details>';;
+  }
+  function renderCards(list, start) {
+    return (list || []).map(function(p, k){ return cardHtml(p, start + k); }).join("");
+  }
+  var groups = DATA.groups || [];
+  if (groups.length) {
+    document.getElementById("paths").classList.add("grouped");
+    var gi = 0, ghtml = "";
+    groups.forEach(function(g){
+      ghtml += '<section class="grp"><h2 class="grp-title">' + esc(g.title) + '</h2>' +
+        (g.desc ? '<p class="grp-desc">' + esc(g.desc) + '</p>' : '') +
+        '<div class="grp-cards">' + renderCards(g.items, gi) + '</div></section>';
+      gi += (g.items || []).length;
+    });
+    document.getElementById("paths").innerHTML = ghtml;
+  } else {
+    document.getElementById("paths").innerHTML = renderCards(paths, 0);
+  }
+  var meta = [];
+  if (DATA.note) meta.push(DATA.note);
+  if (DATA.updated) meta.push("整理于 " + DATA.updated);
+  document.getElementById("foot-meta").textContent = meta.join(" · ");
+  window.addEventListener("beforeprint", function(){
+    Array.prototype.forEach.call(document.querySelectorAll("details"), function(d){ d.open = true; });
+  });
+  var fchips = (DATA.filterChips || []);
+  if (fchips.length) {
+    var fbox = document.getElementById("filters");
+    fbox.innerHTML = '<button class="fbtn on" data-cat="">全部</button>' +
+      fchips.map(function(c){ return '<button class="fbtn" data-cat="'+esc(c)+'">'+esc(c)+'</button>'; }).join("");
+    Array.prototype.forEach.call(fbox.querySelectorAll(".fbtn"), function(b){
+      b.addEventListener("click", function(){
+        var cat = b.getAttribute("data-cat");
+        Array.prototype.forEach.call(fbox.querySelectorAll(".fbtn"), function(x){ x.classList.toggle("on", x === b); });
+        Array.prototype.forEach.call(document.querySelectorAll("#paths .card"), function(card){
+          var hit = !cat || card.getAttribute("data-cat") === cat;
+          card.style.display = hit ? "" : "none";
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("#paths .grp"), function(g){
+          var shown = 0;
+          Array.prototype.forEach.call(g.querySelectorAll(".card"), function(c){
+            if (c.style.display !== "none") shown++;
+          });
+          g.style.display = shown ? "" : "none";
+        });
+      });
+    });
+  }
+  else { var fb0 = document.getElementById("filters"); if (fb0) fb0.style.display = "none"; }
+})();
+</script>
+</body>
+</html>

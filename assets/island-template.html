@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root{
+    --cream:#FCFFEA; --green:#AAECA7; --green-2:#D6F5C8;
+    --ink:#12263A; --ink-2:#40566E; --blue:#3D8DCD; --blue-deep:#1A73BB;
+    --pink:#F8D3BF; --line:#E3E9DA; --sand:#E9D3AC; --sea:#BFE9F5;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,#EAF7FF 0%,#FCFFEA 62%);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.65; min-height:100vh;
+  }
+  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 40px}
+
+  /* 页眉 */
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .num{
+    display:inline-flex;align-items:center;justify-content:center;min-width:52px;height:38px;padding:0 10px;
+    border-radius:10px;background:var(--green);color:#0F3D1B;font-weight:800;font-size:20px;letter-spacing:.5px;
+  }
+  .top .label{font-size:15px;font-weight:700;color:var(--ink-2);letter-spacing:2px}
+  h1{margin:10px 0 4px;font-size:30px;line-height:1.25;font-weight:900;color:#0E3517;letter-spacing:-.5px}
+  h1 .q{color:#fff;background:#0E3517;border-radius:8px;padding:0 7px;margin:0 2px;font-style:normal}
+  .sub{margin:0 0 12px;font-size:14px;color:#23512C;max-width:40em}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+  .chip{background:#fff;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;color:#23512C;box-shadow:0 2px 0 rgba(16,54,23,.10)}
+  .hint{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:#fff;border:1px dashed #C9E3BE;border-radius:12px;padding:8px 14px;font-size:13px;color:#2E7D46;font-weight:700;
+  }
+  .hint .dot{width:8px;height:8px;border-radius:50%;background:#2E7D46;animation:blink 1.6s infinite}
+  .hint .prog{margin-left:auto;font-weight:800;color:var(--blue-deep)}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* 岛屿舞台 */
+  .stage{position:relative;margin-top:6px;border-radius:24px;overflow:hidden;box-shadow:0 10px 30px rgba(18,38,58,.12);background:#EAF7FF}
+  .stage svg{display:block;width:100%;height:auto}
+
+  .node{cursor:pointer;transform-box:fill-box;transform-origin:center;transition:transform .18s ease}
+  .node:hover,.node:focus{transform:translateY(-4px) scale(1.03);outline:none}
+  .node .halo{opacity:0;transition:opacity .2s ease}
+  .node:hover .halo,.node:focus .halo{opacity:.35}
+  .node .hit{fill:transparent}
+  .node.active .halo{opacity:.5}
+  .node .flag{opacity:0;transition:opacity .2s}
+  .node.done .flag{opacity:1}
+  .node .ping{animation:ping 2.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes ping{0%{transform:scale(.86);opacity:.5}70%{transform:scale(1.18);opacity:0}100%{opacity:0}}
+  .tag-text{font-size:13px;font-weight:800;fill:#0E3517;font-family:inherit}
+  .cloud{animation:drift 26s ease-in-out infinite alternate}
+  .cloud.c2{animation-duration:34s;animation-delay:-6s}
+  @keyframes drift{from{transform:translateX(-12px)}to{transform:translateX(12px)}}
+  .boat{animation:bob 3.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+  /* 面板 */
+  .panel{
+    position:fixed;top:0;right:0;height:100%;width:min(460px,100%);background:var(--cream);
+    box-shadow:-14px 0 40px rgba(18,38,58,.16);transform:translateX(102%);
+    transition:transform .28s cubic-bezier(.22,.8,.3,1);z-index:30;display:flex;flex-direction:column;
+  }
+  .panel.open{transform:translateX(0)}
+  .p-head{display:flex;align-items:flex-start;gap:10px;padding:18px 18px 12px;border-bottom:1px solid var(--line);background:#fff}
+  .p-head .p-kicker{font-size:12px;font-weight:800;letter-spacing:2px;color:#2E7D46;margin:0}
+  .p-head h2{margin:2px 0 0;font-size:20px;font-weight:900;color:#0E3517;line-height:1.3}
+  .p-close{
+    margin-left:auto;flex:none;appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink-2);
+    width:34px;height:34px;border-radius:10px;font-size:18px;line-height:1;cursor:pointer
+  }
+  .p-close:hover{background:#F4FBEF}
+  .p-body{padding:16px 18px 28px;overflow-y:auto;flex:1}
+  .p-body p{margin:0 0 10px;font-size:14px}
+  .lead{font-size:14.5px;color:#1F4A2A;font-weight:700;background:#F4FBEF;border-left:3px solid var(--green);padding:9px 12px;border-radius:8px}
+
+  .item{background:#fff;border:1px solid var(--line);border-left:6px solid var(--bar,#1A73BB);border-radius:14px;padding:13px 14px;margin:0 0 12px;box-shadow:0 2px 10px rgba(18,38,58,.05)}
+  .item h3{margin:0 0 2px;font-size:16.5px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .fit{display:inline-block;padding:1px 9px;border-radius:999px;background:var(--bar,#1A73BB);color:#fff;font-size:11.5px;font-weight:800;letter-spacing:.5px}
+  .item .one{margin:0 0 8px;font-size:13.5px;color:var(--ink-2)}
+  .item dl{margin:0;display:grid;gap:8px}
+  .item dt{font-size:11.5px;font-weight:800;letter-spacing:1px;color:var(--bar,#1A73BB);margin-bottom:1px}
+  .item dd{margin:0;font-size:13.5px;color:var(--ink)}
+  .item ul{margin:0;padding-left:17px;font-size:13.5px}
+  .item .why dd,.item .bridge dd{color:#1F4A2A;font-weight:700}
+  .item .step{margin:10px 0 0;padding:9px 12px;border-radius:10px;background:var(--cream);border:1px dashed #C9E3BE;font-size:13px;color:#1F4A2A}
+  .item .step b{display:block;font-size:11.5px;letter-spacing:1px;color:#2E7D46;margin-bottom:2px}
+
+  .steps li{margin:0 0 10px;font-size:14px}
+  .steps li b{color:#0E3517}
+  .foot{margin:16px 0 0;text-align:center;font-size:12.5px;color:#7C8A76}
+
+  .scrim{position:fixed;inset:0;background:rgba(18,38,58,.28);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+  .scrim.on{opacity:1;pointer-events:auto}
+
+  @media (max-width:720px){
+    h1{font-size:24px}
+    .panel{top:auto;bottom:0;height:auto;max-height:78vh;width:100%;transform:translateY(102%);border-radius:20px 20px 0 0}
+    .panel.open{transform:translateY(0)}
+  }
+  @media print{
+    .panel{position:static;transform:none;box-shadow:none;width:auto;height:auto}
+    .scrim,.hint{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <span class="num">04</span>
+    <span class="label" id="islandLabel">我的职业探索岛</span>
+  </header>
+
+  <h1 id="h1"><span id="major">__MAJOR__</span>的<span class="q">N</span>种“活法”</h1>
+  <p class="sub" id="sub">打破“一考定终身”的刻板印象，拓宽专业发展视野，加强探索的主动性与好奇心</p>
+  <div class="chips" id="chips"></div>
+
+  <div class="hint">
+    <span class="dot"></span>
+    <span>岛上有 5 个地方可以点，点一个亮一个</span>
+    <span class="prog" id="prog">已点亮 0 / 5</span>
+  </div>
+
+  <section class="stage">
+    <svg viewBox="0 0 1000 640" role="img" aria-label="职业探索岛：岛上有画像灯塔、活法营地、备选风车、出海小舟与路标五个交互点">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#E9F6FF"/><stop offset="1" stop-color="#CDEBFB"/>
+        </linearGradient>
+        <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#A8E0F2"/><stop offset="1" stop-color="#7FCBEA"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#FFF6C9" stop-opacity=".95"/>
+          <stop offset="1" stop-color="#FFF6C9" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <!-- 天空与海 -->
+      <rect width="1000" height="640" fill="url(#sky)"/>
+      <circle cx="150" cy="86" r="46" fill="#FFF3B0"/>
+      <circle cx="150" cy="86" r="74" fill="url(#glow)"/>
+      <g class="cloud"><ellipse cx="330" cy="92" rx="58" ry="20" fill="#fff" opacity=".9"/><ellipse cx="366" cy="82" rx="38" ry="16" fill="#fff" opacity=".9"/></g>
+      <g class="cloud c2"><ellipse cx="712" cy="70" rx="52" ry="17" fill="#fff" opacity=".8"/><ellipse cx="676" cy="62" rx="32" ry="13" fill="#fff" opacity=".8"/></g>
+      <path d="M0 452 Q250 428 500 440 Q760 452 1000 434 L1000 640 L0 640 Z" fill="url(#seaG)"/>
+      <g stroke="#EAF9FF" stroke-width="3" stroke-linecap="round" opacity=".8" fill="none">
+        <path d="M70 500 q22 -12 44 0 t44 0"/><path d="M120 548 q22 -12 44 0 t44 0"/>
+        <path d="M780 512 q22 -12 44 0 t44 0"/><path d="M690 566 q22 -12 44 0 t44 0"/><path d="M300 596 q22 -12 44 0 t44 0"/>
+      </g>
+
+      <!-- 岛屿：土基、沙岸、草地、高地 -->
+      <ellipse cx="500" cy="470" rx="392" ry="132" fill="#2C86B8" opacity=".16"/>
+      <path d="M112 424 Q500 306 888 424 Q888 486 500 574 Q112 486 112 424 Z" fill="#DDBE8C"/>
+      <path d="M112 424 Q500 306 888 424 Q888 452 500 540 Q112 452 112 424 Z" fill="#E9D3AC"/>
+      <path d="M146 414 Q500 316 854 414 Q854 448 500 520 Q146 448 146 414 Z" fill="#8FD07C"/>
+      <path d="M182 404 Q500 330 818 404 Q818 428 500 486 Q182 428 182 404 Z" fill="#A6DE91" opacity=".85"/>
+      <ellipse cx="470" cy="392" rx="176" ry="58" fill="#B7E8A0"/>
+
+      <!-- 小径 -->
+      <g stroke="#F6EAC8" stroke-width="9" stroke-linecap="round" fill="none" opacity=".95">
+        <path d="M268 392 Q380 372 470 398"/>
+        <path d="M520 410 Q620 424 700 436"/>
+        <path d="M470 430 Q432 470 400 496"/>
+      </g>
+      <g stroke="#E0CFA4" stroke-width="3" stroke-dasharray="6 10" stroke-linecap="round" fill="none">
+        <path d="M268 392 Q380 372 470 398"/>
+        <path d="M520 410 Q620 424 700 436"/>
+        <path d="M470 430 Q432 470 400 496"/>
+      </g>
+
+      <!-- 树与灌木点缀 -->
+      <g>
+        <g transform="translate(205,430)"><rect x="-3" y="-12" width="6" height="16" rx="3" fill="#8A6B44"/><circle cx="0" cy="-22" r="15" fill="#5FBF6A"/></g>
+        <g transform="translate(600,470)"><rect x="-3" y="-10" width="6" height="14" rx="3" fill="#8A6B44"/><circle cx="0" cy="-19" r="13" fill="#5FBF6A"/></g>
+        <g transform="translate(760,470)"><circle cx="0" cy="-8" r="11" fill="#77CC7F"/></g>
+        <g transform="translate(340,470)"><circle cx="0" cy="-8" r="10" fill="#77CC7F"/></g>
+        <g transform="translate(560,352)"><circle cx="0" cy="-8" r="9" fill="#77CC7F"/></g>
+      </g>
+
+      <!-- ① 我的画像：灯塔 -->
+      <g class="node" id="n-me" data-id="me" tabindex="0" role="button" aria-label="我的画像">
+        <circle class="halo" cx="256" cy="366" r="58" fill="#1A73BB"/>
+        <circle class="ping" cx="256" cy="366" r="40" fill="none" stroke="#1A73BB" stroke-width="2.5"/>
+        <g>
+          <path d="M244 384 L250 300 L262 300 L268 384 Z" fill="#FFFFFF"/>
+          <path d="M250 300 L256 278 L262 300 Z" fill="#1A73BB"/>
+          <path d="M246 330 L266 330 L267 344 L245 344 Z" fill="#1A73BB"/>
+          <path d="M247 306 L265 306 L266 320 L246 320 Z" fill="#F8D3BF"/>
+          <path d="M240 386 q16 8 32 0 l0 -6 q-16 8 -32 0 z" fill="#9FB0C2"/>
+          <circle cx="256" cy="272" r="5" fill="#FFF3B0"/>
+        </g>
+        <rect x="196" y="404" width="120" height="26" rx="13" fill="#fff"/>
+        <text class="tag-text" x="256" y="422" text-anchor="middle">我的画像</text>
+        <circle class="hit" cx="256" cy="366" r="62"/>
+      </g>
+
+      <!-- ② 最匹配的活法：主营地帐篷与火堆 -->
+      <g class="node" id="n-top" data-id="top" tabindex="0" role="button" aria-label="最匹配的活法">
+        <circle class="halo" cx="482" cy="382" r="66" fill="#1A73BB"/>
+        <circle class="ping" cx="482" cy="382" r="46" fill="none" stroke="#1A73BB" stroke-width="2.5"/>
+        <g>
+          <path d="M448 396 L482 322 L516 396 Z" fill="#FCFFEA"/>
+          <path d="M482 322 L516 396 L492 396 Z" fill="#E3E9DA"/>
+          <path d="M470 396 L482 366 L494 396 Z" fill="#3D8DCD"/>
+          <path d="M440 396 L482 388 L524 396 Z" fill="#8A6B44" opacity=".25"/>
+          <g transform="translate(536,392)">
+            <path d="M0 0 q-7 -12 0 -20 q7 8 0 20" fill="#F7A23B"/>
+            <path d="M-4 0 q-4 -8 0 -13 q4 5 0 13" fill="#FFD35C"/>
+            <rect x="-11" y="2" width="22" height="4" rx="2" fill="#8A6B44"/>
+          </g>
+        </g>
+        <rect x="422" y="420" width="120" height="26" rx="13" fill="#fff"/>
+        <text class="tag-text" x="482" y="438" text-anchor="middle">最匹配的活法</text>
+        <circle class="hit" cx="482" cy="382" r="70"/>
+      </g>
+
+      <!-- ③ 备选路径：风车 -->
+      <g class="node" id="n-alt" data-id="alt" tabindex="0" role="button" aria-label="备选路径">
+        <circle class="halo" cx="706" cy="410" r="60" fill="#1A73BB"/>
+        <circle class="ping" cx="706" cy="410" r="42" fill="none" stroke="#1A73BB" stroke-width="2.5"/>
+        <g>
+          <path d="M698 430 L703 356 L709 356 L714 430 Z" fill="#fff"/>
+          <path d="M700 358 L706 344 L712 358 Z" fill="#2E9E5B"/>
+          <g transform="translate(706,344)">
+            <g class="blades">
+              <path d="M0 0 L0 -34 L7 -34 L7 0 Z" fill="#8FD07C"/>
+              <path d="M0 0 L0 -34 L7 -34 L7 0 Z" fill="#8FD07C" transform="rotate(90)"/>
+              <path d="M0 0 L0 -34 L7 -34 L7 0 Z" fill="#8FD07C" transform="rotate(180)"/>
+              <path d="M0 0 L0 -34 L7 -34 L7 0 Z" fill="#8FD07C" transform="rotate(270)"/>
+            </g>
+            <circle r="4" fill="#2E7D46"/>
+          </g>
+        </g>
+        <rect x="646" y="440" width="120" height="26" rx="13" fill="#fff"/>
+        <text class="tag-text" x="706" y="458" text-anchor="middle">备选路径</text>
+        <circle class="hit" cx="706" cy="410" r="64"/>
+      </g>
+
+      <!-- ④ 跳出去看的新职业：出海小舟 -->
+      <g class="node" id="n-new" data-id="new" tabindex="0" role="button" aria-label="跳出去看的新职业">
+        <circle class="halo" cx="858" cy="520" r="62" fill="#1A73BB"/>
+        <circle class="ping" cx="858" cy="520" r="44" fill="none" stroke="#1A73BB" stroke-width="2.5"/>
+        <g class="boat">
+          <path d="M812 522 q46 26 92 0 q-8 22 -46 22 q-38 0 -46 -22 z" fill="#C98A12"/>
+          <rect x="855" y="470" width="5" height="52" rx="2" fill="#8A6B44"/>
+          <path d="M860 472 L896 496 L860 508 Z" fill="#FCFFEA"/>
+          <path d="M855 472 L828 496 L855 508 Z" fill="#F8D3BF"/>
+        </g>
+        <rect x="798" y="556" width="120" height="26" rx="13" fill="#fff"/>
+        <text class="tag-text" x="858" y="574" text-anchor="middle">跳出去看</text>
+        <circle class="hit" cx="858" cy="520" r="66"/>
+      </g>
+
+      <!-- ⑤ 这周的第一步：路标 -->
+      <g class="node" id="n-next" data-id="next" tabindex="0" role="button" aria-label="这周的第一步">
+        <circle class="halo" cx="376" cy="500" r="58" fill="#1A73BB"/>
+        <circle class="ping" cx="376" cy="500" r="40" fill="none" stroke="#1A73BB" stroke-width="2.5"/>
+        <g>
+          <rect x="373" y="452" width="6" height="58" rx="3" fill="#8A6B44"/>
+          <path d="M348 458 h56 l12 11 l-12 11 h-56 z" fill="#FCFFEA" stroke="#2E7D46" stroke-width="2"/>
+          <path d="M404 486 h-56 l-12 11 l12 11 h56 z" fill="#F8D3BF" stroke="#C98A12" stroke-width="2"/>
+        </g>
+        <rect x="316" y="524" width="120" height="26" rx="13" fill="#fff"/>
+        <text class="tag-text" x="376" y="542" text-anchor="middle">这周的第一步</text>
+        <circle class="hit" cx="376" cy="500" r="62"/>
+      </g>
+
+      <!-- 打勾标记 -->
+      <g class="flag" id="f-me" transform="translate(300,330)"><circle r="11" fill="#2E9E5B"/><path d="M-5 0 l4 4 l7 -8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>
+      <g class="flag" id="f-top" transform="translate(534,332)"><circle r="11" fill="#2E9E5B"/><path d="M-5 0 l4 4 l7 -8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>
+      <g class="flag" id="f-alt" transform="translate(752,360)"><circle r="11" fill="#2E9E5B"/><path d="M-5 0 l4 4 l7 -8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>
+      <g class="flag" id="f-new" transform="translate(902,486)"><circle r="11" fill="#2E9E5B"/><path d="M-5 0 l4 4 l7 -8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>
+      <g class="flag" id="f-next" transform="translate(326,462)"><circle r="11" fill="#2E9E5B"/><path d="M-5 0 l4 4 l7 -8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></g>
+    </svg>
+  </section>
+
+  <p class="foot" id="foot-meta"></p>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" aria-hidden="true">
+  <header class="p-head">
+    <div>
+      <p class="p-kicker" id="p-kicker">岛屿</p>
+      <h2 id="p-title">—</h2>
+    </div>
+    <button class="p-close" id="p-close" aria-label="关闭">×</button>
+  </header>
+  <div class="p-body" id="p-body"></div>
+</aside>
+
+<script>
+const DATA = /*__DATA__*/;
+</script>
+<script>
+(function(){
+  var COLORS = {core:"#1A73BB", public:"#2E9E5B", hybrid:"#C98A12", media:"#B14AA0", ops:"#3D8DCD", switch:"#7A6BD6"};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function list(a){return (a||[]).map(function(x){return "<li>"+esc(x)+"</li>";}).join("");}
+
+  /* --- 页头 --- */
+  var h1 = document.getElementById("h1");
+  if (DATA.headline) { h1.textContent = DATA.headline; document.title = DATA.headline; }
+  else {
+    document.getElementById("major").textContent = DATA.major || "";
+    document.title = "我的职业探索岛 · " + (DATA.major || "专业");
+  }
+  if (DATA.islandName) {
+    document.title = DATA.islandName;
+    var islandLabel = document.getElementById("islandLabel");
+    if (islandLabel) islandLabel.textContent = DATA.islandName;
+  }
+  document.getElementById("sub").textContent = DATA.sub || document.getElementById("sub").textContent;
+  document.getElementById("chips").innerHTML = (DATA.profileChips||[]).map(function(c){
+    return '<span class="chip">'+esc(c)+'</span>';
+  }).join("");
+  var meta = [];
+  if (DATA.major) meta.push(DATA.major + (DATA.college ? " · " + DATA.college : ""));
+  if (DATA.note) meta.push(DATA.note);
+  if (DATA.updated) meta.push("整理于 " + DATA.updated);
+  document.getElementById("foot-meta").textContent = meta.join(" · ");
+
+  /* --- 节点与面板 --- */
+  var nodes = DATA.nodes || [];
+  var panel = document.getElementById("panel");
+  var body = document.getElementById("p-body");
+  var scrim = document.getElementById("scrim");
+  var kicked = document.getElementById("p-kicker");
+  var ptitle = document.getElementById("p-title");
+  var lit = {};
+
+  function pathCard(p){
+    var bar = COLORS[p.family] || "#1A73BB";
+    return '<article class="item" style="--bar:'+bar+'">'
+      + '<h3>'+esc(p.name)+(p.fit?'<span class="fit">'+esc(p.fit)+'</span>':'')+'</h3>'
+      + '<p class="one">'+esc(p.oneline)+'</p><dl>'
+      + (p.why?'<div class="why"><dt>为什么适合你</dt><dd>'+esc(p.why)+'</dd></div>':'')
+      + (p.bridge?'<div class="bridge"><dt>跟你的专业怎么搭</dt><dd>'+esc(p.bridge)+'</dd></div>':'')
+      + '<div><dt>典型岗位</dt><dd>'+esc((p.roles||[]).join(" · "))+'</dd></div>'
+      + '<div><dt>关键能力</dt><dd><ul>'+list(p.skills)+'</ul></dd></div>'
+      + '<div><dt>怎么进去</dt><dd>'+esc(p.access)+'</dd></div>'
+      + '<div><dt>适合谁</dt><dd>'+esc(p.match)+'</dd></div>'
+      + '<div><dt>代价与风险</dt><dd>'+esc(p.cost)+'</dd></div>'
+      + '</dl>'+(p.next?'<p class="step"><b>这周就能做的一步</b>'+esc(p.next)+'</p>':'')
+      + '</article>';
+  }
+
+  function render(n){
+    if (n.kind === "profile") {
+      var chips = (DATA.profileChips||[]).map(function(c){return '<span class="chip">'+esc(c)+'</span>';}).join("");
+      var says = (n.says||[]).map(function(s){return '<li>'+esc(s)+'</li>';}).join("");
+      return (n.lead?'<p class="lead">'+esc(n.lead)+'</p>':'')
+        + '<div class="chips" style="margin:12px 0 14px">'+chips+'</div>'
+        + (says?'<p style="margin:0 0 6px;font-size:13px;font-weight:800;color:#2E7D46;letter-spacing:1px">你在这轮探索里说过的</p><ul style="margin:0 0 12px;padding-left:18px;font-size:14px">'+says+'</ul>':'')
+        + '<p style="font-size:13px;color:var(--ink-2)">'+(n.tail?esc(n.tail):'画像是搬运工，不是判决书。下面的排序只按你说的来，随时可以改。')+'</p>';
+    }
+    if (n.kind === "paths") {
+      return (n.lead?'<p class="lead">'+esc(n.lead)+'</p>':'')
+        + (n.items||[]).map(pathCard).join("");
+    }
+    if (n.kind === "jobs") {
+      return (n.lead?'<p class="lead">'+esc(n.lead)+'</p>':'')
+        + (n.items||[]).map(function(j){
+            return '<article class="item" style="--bar:#B14AA0">'
+              + '<h3>'+esc(j.name)+(j.category?'<span class="fit" style="background:#B14AA0">'+esc(j.category)+'</span>':'')+'</h3>'
+              + '<p class="one">'+esc(j.oneline)+'</p><dl>'
+              + (j.bridge?'<div class="bridge"><dt>跟你的专业怎么搭</dt><dd>'+esc(j.bridge)+'</dd></div>':'')
+              + '<div><dt>典型岗位</dt><dd>'+esc((j.roles||[]).join(" · "))+'</dd></div>'
+              + '<div><dt>关键能力</dt><dd><ul>'+list(j.skills)+'</ul></dd></div>'
+              + '<div><dt>怎么进去</dt><dd>'+esc(j.access)+'</dd></div>'
+              + '<div><dt>代价与风险</dt><dd>'+esc(j.cost)+'</dd></div>'
+              + '</dl>'+(j.next?'<p class="step"><b>这周就能做的一步</b>'+esc(j.next)+'</p>':'')
+              + '</article>';
+          }).join("");
+    }
+    if (n.kind === "steps") {
+      return (n.lead?'<p class="lead">'+esc(n.lead)+'</p>':'')
+        + '<ol class="steps" style="margin:12px 0 0;padding-left:20px">'
+        + (n.items||[]).map(function(s){ return '<li><b>'+esc(s.from)+'</b>：'+esc(s.text)+'</li>'; }).join("")
+        + '</ol>';
+    }
+    return '<p class="lead">'+esc(n.lead||"这块还没填内容。")+'</p>';
+  }
+
+  function open(id){
+    var n = null;
+    for (var i=0;i<nodes.length;i++) if (nodes[i].id === id) n = nodes[i];
+    if (!n) return;
+    kicked.textContent = n.kicker || "岛屿";
+    ptitle.textContent = n.label || "";
+    body.innerHTML = render(n);
+    panel.classList.add("open");
+    panel.setAttribute("aria-hidden","false");
+    scrim.classList.add("on");
+    var g = document.getElementById("n-" + id);
+    if (g) g.classList.add("active");
+    lit[id] = 1;
+    var f = document.getElementById("f-" + id);
+    if (f) f.classList.add("done");
+    if (g) g.classList.add("done");
+    var total = nodes.length || 5;
+    var cnt = 0;
+    for (var k in lit) if (lit[k]) cnt++;
+    document.getElementById("prog").textContent = "已点亮 " + cnt + " / " + total;
+    body.scrollTop = 0;
+  }
+  function close(){
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden","true");
+    scrim.classList.remove("on");
+    Array.prototype.forEach.call(document.querySelectorAll(".node"), function(g){ g.classList.remove("active"); });
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".node"), function(g){
+    g.addEventListener("click", function(){ open(g.getAttribute("data-id")); });
+    g.addEventListener("keydown", function(e){
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(g.getAttribute("data-id")); }
+    });
+  });
+  document.getElementById("p-close").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") close(); });
+})();
+</script>
+</body>
+</html>

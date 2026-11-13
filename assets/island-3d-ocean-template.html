@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>__TITLE__</title>
+<style>
+  :root{
+    --cream:#FCFFEA; --green:#AAECA7; --green-deep:#2F7D4F; --blue:#3D8DCD;
+    --blue-deep:#1D5A8C; --pink:#F8D3BF; --ink:#17302A; --ink-soft:#4A635C;
+    --line:rgba(23,48,42,.12); --card:#FFFFFF;
+    --shadow:0 18px 48px rgba(23,48,42,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Hiragino Sans GB","Source Han Sans SC",sans-serif;
+    color:var(--ink); background:linear-gradient(180deg,#EAF6FF 0%,#F3FBFF 42%,#FCFFEA 100%);
+    overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+  /* ---------- HUD ---------- */
+  .hud{position:fixed;left:24px;top:20px;z-index:20;max-width:min(60vw,560px);pointer-events:none}
+  .hud-row{display:flex;align-items:center;gap:8px;min-height:26px}
+  .hud-major{font-size:20px;font-weight:800;letter-spacing:.02em;line-height:1.25}
+  .hud-rename{
+    flex:0 0 auto;pointer-events:auto;cursor:pointer;padding:0;
+    width:22px;height:22px;border-radius:50%;border:1px solid var(--line);
+    background:rgba(255,255,255,.86);color:var(--ink-soft);font-size:12px;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center;
+    transition:background .15s,color .15s,border-color .15s
+  }
+  .hud-rename:hover{background:#fff;color:var(--green-deep);border-color:var(--green-deep)}
+  .hud-input{
+    pointer-events:auto;font:inherit;font-size:18px;font-weight:800;color:var(--ink);
+    border:1px solid var(--green-deep);background:rgba(255,255,255,.94);
+    padding:2px 8px;border-radius:8px;outline:none;
+    min-width:170px;max-width:min(52vw,360px)
+  }
+  .hud-input[hidden]{display:none}
+  .hud-sub{margin-top:6px;font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+  .hud-sub b{color:var(--green-deep)}
+
+  .hint{
+    position:fixed;left:24px;bottom:22px;z-index:20;font-size:12px;color:var(--ink-soft);
+    background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:999px;
+    padding:7px 14px;backdrop-filter:blur(6px);pointer-events:none
+  }
+  .bubble{
+    position:fixed;left:0;top:0;z-index:24;transform:translate(-50%,-100%);
+    max-width:232px;padding:8px 12px;border-radius:14px;background:#fff;color:var(--ink);
+    border:1px solid rgba(23,48,42,.14);box-shadow:0 10px 26px rgba(23,48,42,.16);
+    font-size:12.5px;line-height:1.55;text-align:center;pointer-events:none;
+    opacity:0;transition:opacity .22s ease
+  }
+  .bubble.on{opacity:1}
+  .bubble:after{
+    content:"";position:absolute;left:50%;bottom:-6px;width:11px;height:11px;
+    transform:translateX(-50%) rotate(45deg);background:#fff;
+    border-right:1px solid rgba(23,48,42,.14);border-bottom:1px solid rgba(23,48,42,.14)
+  }
+  .guide{
+    position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    padding:22px;background:rgba(23,48,42,.34);backdrop-filter:blur(3px);
+    opacity:0;visibility:hidden;transition:opacity .24s ease, visibility .24s
+  }
+  .guide.on{opacity:1;visibility:visible}
+  .guide-card{
+    width:min(520px,100%);max-height:88vh;overflow:auto;background:#FFFDF7;
+    border:1px solid rgba(23,48,42,.12);border-radius:20px;
+    padding:22px 24px 20px;box-shadow:0 24px 60px rgba(23,48,42,.26)
+  }
+  .g-head{display:flex;align-items:center;justify-content:space-between}
+  .g-eyebrow{
+    font-size:10.5px;letter-spacing:.18em;font-weight:700;color:var(--ink-soft);
+    text-transform:uppercase
+  }
+  .g-close{
+    border:0;background:transparent;color:var(--ink-soft);font-size:22px;line-height:1;
+    cursor:pointer;padding:2px 6px;border-radius:8px
+  }
+  .g-close:hover{background:rgba(23,48,42,.07)}
+  .guide-card h2{
+    margin:8px 0 10px;font-size:23px;line-height:1.25;letter-spacing:-.01em;color:var(--ink)
+  }
+  .g-lead{margin:0 0 16px;font-size:13.5px;line-height:1.75;color:var(--ink-soft)}
+  .g-list{margin:0;padding:0;border-top:1px solid rgba(23,48,42,.1)}
+  .g-item{
+    display:grid;grid-template-columns:86px 1fr;gap:12px;
+    padding:11px 0;border-bottom:1px solid rgba(23,48,42,.08)
+  }
+  .g-item dt{font-size:13px;font-weight:700;color:var(--ink)}
+  .g-item dd{margin:0;font-size:12.5px;line-height:1.7;color:var(--ink-soft)}
+  .g-note{margin:14px 0 0;font-size:12px;line-height:1.7;color:var(--ink-soft)}
+  .g-foot{margin-top:18px;display:flex;justify-content:flex-end}
+  .g-start{
+    border:0;border-radius:999px;padding:11px 20px;cursor:pointer;
+    background:#1F5C4C;color:#F6FFFA;font-size:13.5px;font-weight:700;
+    box-shadow:0 10px 22px rgba(31,92,76,.26);transition:transform .16s ease, box-shadow .16s ease
+  }
+  .g-start:hover{transform:translateY(-1px);box-shadow:0 14px 26px rgba(31,92,76,.3)}
+  .g-start:active{transform:translateY(0)}
+  .progress{
+    position:fixed;right:24px;top:20px;z-index:20;font-size:12.5px;font-weight:700;
+    background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:999px;
+    padding:8px 14px;box-shadow:0 6px 18px rgba(23,48,42,.08)
+  }
+  .progress span{color:var(--green-deep)}
+
+  /* 底部地标导航（3D 里的可点入口，移动端尤其有用） */
+  .legend{
+    position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:20;
+    display:flex;gap:8px;flex-wrap:nowrap;max-width:calc(100vw - 40px);overflow-x:auto;
+    padding:6px;border-radius:16px;background:rgba(255,255,255,.88);
+    border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(8px);
+    scrollbar-width:none
+  }
+  .legend::-webkit-scrollbar{display:none}
+  .legend button{
+    flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:11px;
+    padding:8px 12px;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;
+    display:flex;align-items:center;gap:6px;transition:.18s;line-height:1.2
+  }
+  .legend button:hover{border-color:var(--green);background:#F4FFF0;transform:translateY(-1px)}
+  .legend button.done{background:#F1FFF0;border-color:var(--green)}
+  .legend .dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex:0 0 auto}
+  .legend button.done .dot{background:var(--green-deep)}
+
+  /* ---------- 3D 地标标签 ---------- */
+  #labels{position:fixed;inset:0;z-index:15;pointer-events:none;overflow:hidden}
+  .tag{
+    position:absolute;left:0;top:0;transform:translate(-50%,-100%);
+    pointer-events:auto;cursor:pointer;user-select:none;
+    background:rgba(255,255,255,.94);border:1px solid rgba(23,48,42,.14);
+    border-radius:11px;padding:6px 10px;white-space:nowrap;
+    box-shadow:0 8px 22px rgba(23,48,42,.14);transition:transform .16s,border-color .16s,background .16s;
+    will-change:transform,left,top
+  }
+  .tag:hover,.tag.hover{border-color:var(--green-deep);background:#F6FFF2;transform:translate(-50%,-100%) scale(1.06)}
+  .tag .k{font-size:10.5px;font-weight:700;color:var(--blue);letter-spacing:.06em}
+  .tag .t{font-size:13px;font-weight:700;margin-top:1px}
+  .tag .c{font-size:10.5px;color:var(--ink-soft);margin-top:2px}
+  .tag.done .k{color:var(--green-deep)}
+  .tag .arrow{position:absolute;left:50%;bottom:-5px;width:9px;height:9px;margin-left:-4.5px;
+    background:inherit;border-right:1px solid rgba(23,48,42,.14);border-bottom:1px solid rgba(23,48,42,.14);
+    transform:rotate(45deg)}
+
+  /* ---------- 抽屉 ---------- */
+  .scrim{
+    position:fixed;inset:0;z-index:30;background:rgba(23,48,42,.28);
+    opacity:0;pointer-events:none;transition:opacity .25s
+  }
+  .scrim.on{opacity:1;pointer-events:auto}
+
+  .panel{
+    position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);z-index:40;
+    background:var(--cream);border-left:1px solid var(--line);
+    box-shadow:-20px 0 60px rgba(23,48,42,.18);
+    display:flex;flex-direction:column;
+    transform:translateX(102%);transition:transform .32s cubic-bezier(.22,.9,.24,1);
+    will-change:transform
+  }
+  .panel.on{transform:translateX(0)}
+  .p-head{flex:0 0 auto;padding:20px 20px 14px;border-bottom:1px solid var(--line);
+    display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:rgba(255,255,255,.55)}
+  .p-kicker{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--blue)}
+  .p-title{font-size:19px;font-weight:800;margin-top:4px;line-height:1.3}
+  .p-close{
+    flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:10px;
+    padding:7px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--ink-soft)
+  }
+  .p-close:hover{border-color:var(--blue);color:var(--ink)}
+  .p-body{
+    flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:16px 20px 28px;overscroll-behavior:contain
+  }
+  .p-lead{font-size:13px;color:var(--ink-soft);line-height:1.65;margin:0 0 14px}
+  .p-tail{margin-top:16px;padding:12px 14px;border-radius:12px;background:#fff;
+    border:1px dashed rgba(23,48,42,.18);font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 14px}
+  .chip{font-size:11.5px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--ink-soft)}
+
+  .say{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed rgba(23,48,42,.1);font-size:13px;line-height:1.6}
+  .say:last-child{border-bottom:0}
+  .say .idx{flex:0 0 20px;height:20px;border-radius:6px;background:var(--green);color:#204A32;
+    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(23,48,42,.05)
+  }
+  .card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .card-t{font-size:15px;font-weight:800;line-height:1.35}
+  .badge{flex:0 0 auto;font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:999px;padding:4px 9px;
+    background:var(--green);color:#204A32}
+  .badge.alt{background:#E8F2FB;color:var(--blue-deep)}
+  .card-oneline{margin-top:6px;font-size:12.5px;color:var(--blue-deep);line-height:1.5}
+  .kv{margin-top:10px;font-size:12.5px;line-height:1.65}
+  .kv dt{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:3px}
+  .kv dd{margin:0 0 9px}
+  .kv dd:last-child{margin-bottom:0}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .tags span{font-size:11.5px;background:#F4F9F0;border:1px solid rgba(23,48,42,.09);border-radius:8px;padding:4px 9px;color:var(--ink-soft)}
+  .why{margin-top:10px;padding:9px 11px;border-radius:10px;background:#F7FFF3;
+    border:1px solid rgba(47,125,79,.16);font-size:12px;color:var(--ink-soft);line-height:1.6}
+  .cost{margin-top:8px;padding:9px 11px;border-radius:10px;background:#FFF7F3;
+    border:1px solid rgba(200,120,90,.18);font-size:12px;color:var(--ink-soft);line-height:1.6}
+
+  .step{display:flex;gap:11px;padding:11px 0;border-bottom:1px dashed rgba(23,48,42,.1)}
+  .step:last-child{border-bottom:0}
+  .step .box{flex:0 0 18px;height:18px;border-radius:6px;border:1.5px solid var(--green-deep);margin-top:2px}
+  .step .from{font-size:11px;font-weight:800;color:var(--blue);letter-spacing:.03em}
+  .step .txt{font-size:13px;line-height:1.6;margin-top:2px}
+
+  .foot{position:fixed;left:24px;bottom:56px;z-index:19;font-size:11px;color:var(--ink-soft);pointer-events:none;opacity:.85}
+
+  /* 回退（不支持 WebGL） */
+  .fallback{position:fixed;inset:0;z-index:60;background:var(--cream);overflow:auto;padding:28px}
+  .fallback h2{font-size:18px;margin:0 0 8px}
+  .fallback p{font-size:13px;color:var(--ink-soft);line-height:1.7}
+  .fallback .fb-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+  .fallback .fb-item b{font-size:13.5px}
+
+  @media (max-width:720px){
+    .hud{left:16px;top:14px;max-width:calc(100vw - 130px)}
+    .hud-major{font-size:16px}
+    .hud-input{font-size:15px;min-width:140px}
+    .hud-sub{font-size:11.5px}
+    .progress{right:14px;top:14px;font-size:11.5px;padding:6px 11px}
+    .hint{left:16px;bottom:78px;font-size:11px}
+    .legend{left:8px;right:8px;bottom:10px;transform:none;max-width:none;justify-content:flex-start;padding:5px;border-radius:14px}
+    .legend button{font-size:12px;padding:7px 10px}
+    .tag{padding:5px 8px}
+    .tag .t{font-size:11.5px}
+    .tag .k{font-size:9.5px}
+    .tag .c{display:none}
+    .panel{top:auto;left:0;right:0;bottom:0;width:100%;height:74vh;border-left:0;border-top:1px solid var(--line);
+      border-radius:18px 18px 0 0;transform:translateY(102%)}
+    .panel.on{transform:translateY(0)}
+    .p-head{padding:16px 16px 12px}
+    .p-body{padding:14px 16px 24px}
+    .foot{display:none}
+    .guide{padding:12px}
+    .guide-card{padding:18px 16px 16px;border-radius:16px;max-height:92vh}
+    .guide-card h2{font-size:20px}
+    .g-lead{font-size:13px;margin-bottom:13px}
+    .g-item{grid-template-columns:1fr;gap:2px;padding:9px 0}
+    .g-item dt{font-size:12.5px}
+    .g-item dd{font-size:12px}
+    .g-foot{justify-content:stretch}
+    .g-start{width:100%;padding:12px 18px}
+  }
+
+  @media print{
+    body{background:#fff;overflow:visible}
+    #scene,#labels,.hint,.legend,.progress,.scrim,.foot{display:none!important}
+    .panel{position:static;width:100%;height:auto;transform:none;box-shadow:none;border:0;display:block}
+    .p-body{overflow:visible}
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="labels"></div>
+
+<header class="hud">
+  <div class="hud-row">
+    <div class="hud-major" id="hudMajor">__MAJOR__</div>
+    <button class="hud-rename" id="hudRename" type="button" title="给这座岛换个名字" aria-label="给这座岛换个名字">✎</button>
+    <input class="hud-input" id="hudInput" type="text" maxlength="20" hidden aria-label="给这座岛起个名字">
+  </div>
+  <div class="hud-sub" id="hudSub"></div>
+</header>
+<div class="progress" id="progress">已点亮 <span>0</span> / 5</div>
+<div class="hint">拖拽旋转 · 滚轮或双指缩放 · 点地标看内容 · 点小狐狸让它带路</div>
+<div class="bubble" id="bubble"></div>
+<div class="guide on" id="guide" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+  <div class="guide-card">
+    <div class="g-head">
+      <span class="g-eyebrow">A FIELD GUIDE</span>
+      <button class="g-close" id="guideClose" type="button" aria-label="关闭指南">×</button>
+    </div>
+    <h2 id="guideTitle">小岛漫游指南</h2>
+    <p class="g-lead">不必按顺序，也没有规定路线。<br>点亮一处，就多看见一种活法。</p>
+    <dl class="g-list">
+      <div class="g-item"><dt>环顾小岛</dt><dd>按住拖动，360° 旋转；俯仰有边界，不会转到岛底下。</dd></div>
+      <div class="g-item"><dt>靠近风景</dt><dd>滚轮或双指捏合缩放，始终停在舒服的观看范围。</dd></div>
+      <div class="g-item"><dt>跟着向导</dt><dd>点岛上的小狐狸，它会带你走向下一处还没看过的地方。</dd></div>
+      <div class="g-item"><dt>发现故事</dt><dd>点地标，或点它头顶的标签，右侧抽屉会展开这一处的全部内容。</dd></div>
+      <div class="g-item"><dt>点亮五处</dt><dd>看过的地标会亮起来，右上角记着你已经点亮了几处。</dd></div>
+    </dl>
+    <p class="g-note">同一个岛，五个地方；按 Esc 可以关掉这份指南或已打开的内容。<br>左上角的岛名，点它旁边的 ✎ 就能改成你自己的名字，改完会记住。</p>
+    <div class="g-foot"><button class="g-start" id="guideStart" type="button">知道了，出发 →</button></div>
+  </div>
+</div>
+<div class="legend" id="legend"></div>
+<footer class="foot" id="foot"></footer>
+
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" aria-hidden="true">
+  <div class="p-head">
+    <div>
+      <div class="p-kicker" id="pKicker"></div>
+      <div class="p-title" id="pTitle"></div>
+    </div>
+    <button class="p-close" id="pClose" type="button">关闭</button>
+  </div>
+  <div class="p-body" id="pBody"></div>
+</aside>
+
+<div class="fallback" id="fallback" hidden></div>
+
+<script>/*__THREE__*/</script>
+<script>
+(function(){
+  "use strict";
+
+  var DATA = /*__DATA__*/;
+  var nodes = (DATA && DATA.nodes) || [];
+
+  /* ============ 数据准备 ============ */
+  var ORDER = ["me","top","alt","new","next"];
+  var POS = {
+    me:   { angle: -Math.PI/2,               r: 2.55, lift: 0 },
+    top:  { angle: -Math.PI/2 + Math.PI*2/5, r: 3.05, lift: 0 },
+    alt:  { angle: -Math.PI/2 + Math.PI*4/5, r: 3.05, lift: 0 },
+    next: { angle: -Math.PI/2 + Math.PI*6/5, r: 3.05, lift: 0 },
+    new:  { angle: -Math.PI/2 + Math.PI*8/5, r: 4.55, lift: -0.30 }
+  };
+  var META = {};
+  nodes.forEach(function(n){ META[n.id] = n; });
+
+  function countOf(n){
+    if(!n) return 0;
+    if(n.items) return n.items.length;
+    if(n.says) return n.says.length;
+    return 0;
+  }
+
+  var hudMajor = document.getElementById("hudMajor");
+  var hudSub = document.getElementById("hudSub");
+  var foot = document.getElementById("foot");
+
+  /* ============ 岛名：学生可以自己起名 ============ */
+  var NAME_SUFFIX = "·职业探索岛";
+  var nameKey = "island-name:" + ((DATA && DATA.major) || "default");
+
+  function normIslandName(v){
+    var s = String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 20);
+    if(!s) return "";
+    if(/职业探索岛$/.test(s)) return s;
+    return s.replace(/[·・.\-—\s]+$/g, "") + NAME_SUFFIX;
+  }
+  var islandName = normIslandName(DATA && DATA.islandName) || normIslandName(DATA && DATA.major) || ("我的" + NAME_SUFFIX);
+  var savedName = "";
+  try{ savedName = localStorage.getItem(nameKey) || ""; }catch(e){ savedName = ""; }
+  islandName = normIslandName(savedName) || islandName;
+
+  function paintName(){
+    if(hudMajor) hudMajor.textContent = islandName;
+    document.title = islandName;
+  }
+  paintName();
+
+  var hudRename = document.getElementById("hudRename");
+  var hudInput = document.getElementById("hudInput");
+  var nameEditing = false;
+  function beginName(){
+    if(!hudInput || !hudMajor || nameEditing) return;
+    nameEditing = true;
+    hudInput.value = islandName.replace(/·职业探索岛$/, "");
+    hudInput.hidden = false;
+    hudMajor.style.display = "none";
+    hudInput.focus();
+    try{ hudInput.setSelectionRange(0, hudInput.value.length); }catch(e){}
+  }
+  function endName(save){
+    if(!hudInput || !hudMajor || !nameEditing) return;
+    nameEditing = false;
+    hudInput.hidden = true;
+    hudMajor.style.display = "";
+    if(!save) return;
+    var next = normIslandName(hudInput.value);
+    if(!next || next === islandName) return;
+    islandName = next;
+    try{ localStorage.setItem(nameKey, next); }catch(e){}
+    paintName();
+    if(fox && typeof say === "function") say("好名字。现在这座岛叫「" + islandName + "」。", 2600);
+  }
+  if(hudRename){
+    hudRename.addEventListener("click", function(e){
+      if(e && e.stopPropagation) e.stopPropagation();
+      beginName();
+    });
+  }
+  if(hudInput){
+    hudInput.addEventListener("keydown", function(e){
+      if(e.key === "Enter"){ e.preventDefault(); e.stopPropagation(); endName(true); }
+      else if(e.key === "Escape"){ e.preventDefault(); e.stopPropagation(); endName(false); }
+    });
+    hudInput.addEventListener("blur", function(){ endName(true); });
+    hudInput.addEventListener("pointerdown", function(e){ e.stopPropagation(); });
+  }
+
+  hudSub.innerHTML = (DATA && DATA.headline ? escapeHtml(DATA.headline) : "") +
+    (DATA && DATA.college ? " · <b>" + escapeHtml(DATA.college) + "</b>" : "");
+  foot.textContent = (DATA && DATA.updated ? "更新于 " + DATA.updated : "") +
+    (DATA && DATA.note ? " · " + DATA.note : "");
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  /* ============ 开场指南卡 ============ */
+  var guide = document.getElementById("guide");
+  var guideOpen = !!(guide && guide.classList.contains("on"));
+
+  function closeGuide(){
+    if(!guide || !guideOpen) return;
+    guide.classList.remove("on");
+    guideOpen = false;
+    idleTimer = 0;
+    autoSpin = true;
+    foxIntro();
+  }
+  if(guide){
+    var gClose = document.getElementById("guideClose");
+    var gStart = document.getElementById("guideStart");
+    if(gClose) gClose.addEventListener("click", closeGuide);
+    if(gStart) gStart.addEventListener("click", closeGuide);
+    guide.addEventListener("click", function(e){ if(e.target === guide) closeGuide(); });
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape" && guideOpen) closeGuide();
+    });
+  }
+
+  /* ============ 是否支持 WebGL ============ */
+  function webglOK(){
+    try{
+      var c = document.createElement("canvas");
+      return !!(window.WebGLRenderingContext && (c.getContext("webgl") || c.getContext("experimental-webgl")));
+    }catch(e){ return false; }
+  }
+
+  /* ============ 回退：纯内容版 ============ */
+  function renderFallback(){
+    var box = document.getElementById("fallback");
+    var html = '<h2>' + escapeHtml(DATA.major || "我的职业探索岛") + '</h2>' +
+      '<p>当前浏览器没有开启 3D 能力，下面用文字版展示同样的内容。想看可旋转的岛，请用 Chrome 或 Edge 打开本文件。</p>';
+    nodes.forEach(function(n){
+      html += '<div class="fb-item"><b>' + escapeHtml(n.kicker + " · " + n.label) + '</b>';
+      if(n.lead) html += '<p>' + escapeHtml(n.lead) + '</p>';
+      if(n.says) n.says.forEach(function(s){ html += '<p>· ' + escapeHtml(s) + '</p>'; });
+      if(n.items) n.items.forEach(function(it){
+        var t = it.name || it.text || "";
+        var sub = it.from ? "（" + it.from + "）" : "";
+        html += '<p>· ' + escapeHtml(t) + escapeHtml(sub) + '</p>';
+      });
+      html += '</div>';
+    });
+    box.innerHTML = html;
+    box.hidden = false;
+    document.getElementById("scene").style.display = "none";
+  }
+
+  /* ============ 抽屉内容渲染 ============ */
+  var panel = document.getElementById("panel");
+  var scrim = document.getElementById("scrim");
+  var pKicker = document.getElementById("pKicker");
+  var pTitle = document.getElementById("pTitle");
+  var pBody = document.getElementById("pBody");
+  var lit = {};
+
+  function badgeClass(fit){
+    return (fit && fit.indexOf("备选") >= 0) ? "badge alt" : "badge";
+  }
+
+  function renderPathCard(it){
+    var h = '<div class="card">';
+    h += '<div class="card-h"><div class="card-t">' + escapeHtml(it.name) + '</div>' +
+         (it.fit ? '<span class="' + badgeClass(it.fit) + '">' + escapeHtml(it.fit) + '</span>' : "") + '</div>';
+    if(it.oneline) h += '<div class="card-oneline">' + escapeHtml(it.oneline) + '</div>';
+    h += '<dl class="kv">';
+    if(it.roles && it.roles.length) h += '<dt>常见岗位</dt><dd><div class="tags">' +
+      it.roles.map(function(r){ return '<span>' + escapeHtml(r) + '</span>'; }).join("") + '</div></dd>';
+    if(it.skills && it.skills.length) h += '<dt>要会的本事</dt><dd><div class="tags">' +
+      it.skills.map(function(r){ return '<span>' + escapeHtml(r) + '</span>'; }).join("") + '</div></dd>';
+    if(it.access) h += '<dt>怎么进去</dt><dd>' + escapeHtml(it.access) + '</dd>';
+    if(it.match) h += '<dt>适合谁</dt><dd>' + escapeHtml(it.match) + '</dd>';
+    h += '</dl>';
+    if(it.why) h += '<div class="why">为什么排给你：' + escapeHtml(it.why) + '</div>';
+    if(it.cost) h += '<div class="cost">要付的代价：' + escapeHtml(it.cost) + '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderJobCard(it){
+    var h = '<div class="card">';
+    h += '<div class="card-h"><div class="card-t">' + escapeHtml(it.name) + '</div>' +
+         (it.category ? '<span class="badge alt">' + escapeHtml(it.category) + '</span>' : "") + '</div>';
+    if(it.oneline) h += '<div class="card-oneline">' + escapeHtml(it.oneline) + '</div>';
+    h += '<dl class="kv">';
+    if(it.roles && it.roles.length) h += '<dt>常见岗位</dt><dd><div class="tags">' +
+      it.roles.map(function(r){ return '<span>' + escapeHtml(r) + '</span>'; }).join("") + '</div></dd>';
+    if(it.bridge) h += '<dt>和你专业的关系</dt><dd>' + escapeHtml(it.bridge) + '</dd>';
+    if(it.access) h += '<dt>怎么进去</dt><dd>' + escapeHtml(it.access) + '</dd>';
+    if(it.match) h += '<dt>适合谁</dt><dd>' + escapeHtml(it.match) + '</dd>';
+    h += '</dl>';
+    if(it.cost) h += '<div class="cost">要付的代价：' + escapeHtml(it.cost) + '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function buildBody(n){
+    var h = "";
+    if(n.lead) h += '<p class="p-lead">' + escapeHtml(n.lead) + '</p>';
+    if(n.kind === "profile"){
+      if(n.chips && n.chips.length){
+        h += '<div class="chip-row">' + n.chips.map(function(c){
+          return '<span class="chip">' + escapeHtml(c) + '</span>';
+        }).join("") + '</div>';
+      }
+      if(n.says && n.says.length){
+        n.says.forEach(function(s, i){
+          h += '<div class="say"><span class="idx">' + (i + 1) + '</span><span>' + escapeHtml(s) + '</span></div>';
+        });
+      }
+    } else if(n.kind === "paths"){
+      h += (n.items || []).map(renderPathCard).join("");
+    } else if(n.kind === "jobs"){
+      h += (n.items || []).map(renderJobCard).join("");
+    } else if(n.kind === "steps"){
+      (n.items || []).forEach(function(it){
+        h += '<div class="step"><div class="box"></div><div>' +
+             (it.from ? '<div class="from">' + escapeHtml(it.from) + '</div>' : "") +
+             '<div class="txt">' + escapeHtml(it.text) + '</div></div></div>';
+      });
+    }
+    if(n.tail) h += '<div class="p-tail">' + escapeHtml(n.tail) + '</div>';
+    if(!h) h = '<p class="p-lead">这一项暂时没有内容。</p>';
+    return h;
+  }
+
+  function openNode(id){
+    var n = META[id];
+    if(!n) return;
+    pKicker.textContent = n.kicker || "";
+    pTitle.textContent = n.label || "";
+    pBody.innerHTML = buildBody(n);
+    pBody.scrollTop = 0;
+    panel.classList.add("on");
+    panel.setAttribute("aria-hidden", "false");
+    scrim.classList.add("on");
+    lit[id] = true;
+    updateProgress();
+    focusOn(id);
+  }
+  function closePanel(){
+    panel.classList.remove("on");
+    panel.setAttribute("aria-hidden", "true");
+    scrim.classList.remove("on");
+    activeId = null;
+    updateActiveTags();
+  }
+  document.getElementById("pClose").addEventListener("click", closePanel);
+  scrim.addEventListener("click", closePanel);
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closePanel(); });
+
+  function updateProgress(){
+    var k = ORDER.filter(function(i){ return lit[i]; }).length;
+    var el = document.getElementById("progress");
+    el.innerHTML = "已点亮 <span>" + k + "</span> / " + ORDER.length;
+    var lg = document.getElementById("legend");
+    Array.prototype.forEach.call(lg.querySelectorAll("button"), function(b){
+      b.classList.toggle("done", !!lit[b.getAttribute("data-id")]);
+    });
+    updateActiveTags();
+  }
+
+  /* ============ 底部导航 ============ */
+  var legend = document.getElementById("legend");
+  ORDER.forEach(function(id){
+    var n = META[id];
+    if(!n) return;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("data-id", id);
+    b.innerHTML = '<span class="dot"></span><span>' + escapeHtml(n.kicker.replace(/^[①②③④⑤]\s*/, "") + " " + n.label) + '</span>';
+    b.addEventListener("click", function(){ openNode(id); });
+    legend.appendChild(b);
+  });
+
+  if(!webglOK() || typeof THREE === "undefined"){
+    renderFallback();
+    return;
+  }
+
+  /* ============ Three.js 场景 ============ */
+  var canvas = document.getElementById("scene");
+  var renderer;
+  try{
+    renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true, alpha: true});
+  }catch(e){
+    renderFallback();
+    return;
+  }
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  renderer.setPixelRatio(DPR);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if("outputColorSpace" in renderer && THREE.SRGBColorSpace){
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  }
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xEAF6FF, 24, 52);
+
+  var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+
+  /* 光照 */
+  var hemi = new THREE.HemisphereLight(0xFFFFFF, 0x8FBFA0, 1.05);
+  scene.add(hemi);
+  var sun = new THREE.DirectionalLight(0xFFF6E0, 1.25);
+  sun.position.set(9, 14, 7);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 45;
+  sun.shadow.camera.left = -14;
+  sun.shadow.camera.right = 14;
+  sun.shadow.camera.top = 14;
+  sun.shadow.camera.bottom = -14;
+  sun.shadow.bias = -0.0008;
+  scene.add(sun);
+  var fill = new THREE.DirectionalLight(0xBFE0FF, 0.45);
+  fill.position.set(-8, 6, -9);
+  scene.add(fill);
+
+  var root = new THREE.Group();
+  scene.add(root);
+
+  var CLR = {
+    grass: 0xAAECA7, grassDark: 0x7FD08C, sand: 0xF8E7C0, sandDark: 0xE9D3A6,
+    water: 0x3D8DCD, rock: 0x9AA8A2, wood: 0xB4845A, white: 0xFFFDF2,
+    red: 0xE2705F, fire: 0xFFB055, sail: 0xF8D3BF, ink: 0x17302A
+  };
+
+  function mat(color, opt){
+    var o = {color: color, roughness: 0.82, metalness: 0.02};
+    if(opt) for(var k in opt) o[k] = opt[k];
+    return new THREE.MeshStandardMaterial(o);
+  }
+
+  /* --- 水面 --- */
+  var waterGeo = new THREE.CircleGeometry(60, 72);
+  var waterMat = mat(CLR.water, {roughness: 0.25, metalness: 0.15, transparent: true, opacity: 0.9});
+  var water = new THREE.Mesh(waterGeo, waterMat);
+  water.rotation.x = -Math.PI / 2;
+  water.position.y = -0.55;
+  water.receiveShadow = true;
+  root.add(water);
+
+  /* 水面波纹环 */
+  var rings = [];
+  for(var ri = 0; ri < 3; ri++){
+    var rg = new THREE.RingGeometry(5.6, 5.75, 64);
+    var rm = new THREE.MeshBasicMaterial({color: 0xFFFFFF, transparent: true, opacity: 0.22, side: THREE.DoubleSide});
+    var ring = new THREE.Mesh(rg, rm);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -0.5;
+    ring.userData.phase = ri * 0.33;
+    root.add(ring);
+    rings.push(ring);
+  }
+
+  /* --- 岛：沙滩底座 + 草地台 --- */
+  var island = new THREE.Group();
+  root.add(island);
+
+  var sandBase = new THREE.Mesh(new THREE.CylinderGeometry(4.75, 4.15, 0.75, 40), mat(CLR.sand, {roughness: 0.95}));
+  sandBase.position.y = -0.18;
+  sandBase.castShadow = true;
+  sandBase.receiveShadow = true;
+  island.add(sandBase);
+
+  var grassTop = new THREE.Mesh(new THREE.CylinderGeometry(4.35, 4.62, 0.42, 40), mat(CLR.grass, {roughness: 0.9}));
+  grassTop.position.y = 0.36;
+  grassTop.castShadow = true;
+  grassTop.receiveShadow = true;
+  island.add(grassTop);
+
+  /* 岛上的小高地，增加层次 */
+  var hill = new THREE.Mesh(new THREE.SphereGeometry(1.55, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2), mat(CLR.grassDark, {roughness: 0.95}));
+  hill.scale.set(1, 0.42, 1);
+  hill.position.set(0.2, 0.55, -0.35);
+  hill.castShadow = true;
+  hill.receiveShadow = true;
+  island.add(hill);
+
+  /* 岛边石头 */
+  var rockGeo = new THREE.DodecahedronGeometry(0.3, 0);
+  for(var s = 0; s < 7; s++){
+    var a = s / 7 * Math.PI * 2 + 0.4;
+    var rk = new THREE.Mesh(rockGeo, mat(CLR.rock, {roughness: 0.95}));
+    var rr = 3.95 + (s % 3) * 0.18;
+    rk.position.set(Math.cos(a) * rr, 0.28, Math.sin(a) * rr);
+    rk.scale.set(0.8 + (s % 3) * 0.25, 0.6 + (s % 2) * 0.3, 0.8 + (s % 2) * 0.2);
+    rk.rotation.y = s;
+    rk.castShadow = true;
+    island.add(rk);
+  }
+
+  /* --- 树（低模） --- */
+  function makeTree(scale){
+    var g = new THREE.Group();
+    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, 0.42, 7), mat(CLR.wood, {roughness: 0.95}));
+    trunk.position.y = 0.21;
+    trunk.castShadow = true;
+    g.add(trunk);
+    var leafMat = mat(CLR.grassDark, {roughness: 0.95});
+    var l1 = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.62, 8), leafMat);
+    l1.position.y = 0.68; l1.castShadow = true; g.add(l1);
+    var l2 = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.5, 8), leafMat);
+    l2.position.y = 0.98; l2.castShadow = true; g.add(l2);
+    g.scale.setScalar(scale || 1);
+    return g;
+  }
+  var treeSlots = [
+    [-2.75, 1.55, 1.05], [2.55, 1.75, 0.95], [-2.15, -2.35, 1.0], [2.35, -2.2, 0.9],
+    [-3.35, 0.15, 0.8], [3.3, 0.45, 0.75], [0.35, 2.95, 0.9], [-0.55, -3.05, 0.85],
+    [1.45, 2.5, 0.7], [-1.65, 2.45, 0.7]
+  ];
+  treeSlots.forEach(function(t){
+    var tr = makeTree(t[2]);
+    tr.position.set(t[0], 0.55, t[1]);
+    island.add(tr);
+  });
+
+  /* --- 地标模型 --- */
+  var hotspots = [];       // 可点对象
+  var pickables = [];      // raycast 目标
+  var tagEls = {};
+
+  function registerPick(obj, id){
+    obj.traverse(function(o){
+      if(o.isMesh){
+        o.userData.nodeId = id;
+        pickables.push(o);
+      }
+    });
+  }
+
+  /* ① 灯塔 */
+  function makeLighthouse(){
+    var g = new THREE.Group();
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.6, 0.28, 18), mat(CLR.sandDark, {roughness: 0.95}));
+    base.position.y = 0.14; base.castShadow = true; base.receiveShadow = true; g.add(base);
+    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.34, 1.5, 20), mat(CLR.white, {roughness: 0.7}));
+    body.position.y = 1.02; body.castShadow = true; g.add(body);
+    var stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 0.28, 20), mat(CLR.red, {roughness: 0.7}));
+    stripe.position.y = 1.28; stripe.castShadow = true; g.add(stripe);
+    var topRoom = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.3, 16), mat(0x33484F, {roughness: 0.5, emissive: 0x1D5A8C, emissiveIntensity: 0.35}));
+    topRoom.position.y = 1.9; g.add(topRoom);
+    var roof = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.34, 18), mat(CLR.red, {roughness: 0.7}));
+    roof.position.y = 2.22; roof.castShadow = true; g.add(roof);
+    var beam = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 12), new THREE.MeshBasicMaterial({color: 0xFFF0B8}));
+    beam.position.y = 1.9; g.add(beam);
+    var pl = new THREE.PointLight(0xFFE9A8, 0.9, 6, 2);
+    pl.position.y = 1.9; g.add(pl);
+    g.userData.pulse = beam;
+    g.userData.light = pl;
+    return g;
+  }
+
+  /* ② 主营地：帐篷 + 篝火 */
+  function makeCamp(){
+    var g = new THREE.Group();
+    var tent = new THREE.Mesh(new THREE.ConeGeometry(0.66, 0.86, 4), mat(CLR.sail, {roughness: 0.85}));
+    tent.position.set(-0.22, 0.43, 0.1);
+    tent.rotation.y = Math.PI / 4;
+    tent.castShadow = true; g.add(tent);
+    var door = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.42, 4), mat(0xC98A6B, {roughness: 0.9}));
+    door.position.set(-0.22, 0.21, 0.45);
+    door.rotation.y = Math.PI / 4; g.add(door);
+    /* 篝火 */
+    var logs = new THREE.Group();
+    for(var i = 0; i < 4; i++){
+      var lg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.42, 6), mat(CLR.wood, {roughness: 0.95}));
+      lg.rotation.z = Math.PI / 2;
+      lg.rotation.y = i * Math.PI / 4 + 0.3;
+      lg.position.y = 0.05;
+      lg.castShadow = true;
+      logs.add(lg);
+    }
+    logs.position.set(0.62, 0.06, 0.42);
+    g.add(logs);
+    var flame = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 8), new THREE.MeshBasicMaterial({color: CLR.fire}));
+    flame.position.set(0.62, 0.26, 0.42);
+    g.add(flame);
+    var fl = new THREE.PointLight(0xFFA64D, 1.0, 4.5, 2);
+    fl.position.set(0.62, 0.42, 0.42);
+    g.add(fl);
+    /* 小旗 */
+    var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.1, 6), mat(CLR.wood));
+    pole.position.set(-0.75, 0.55, -0.35); g.add(pole);
+    var flag = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.22), new THREE.MeshStandardMaterial({color: CLR.green, side: THREE.DoubleSide, roughness: 0.9}));
+    flag.position.set(-0.56, 0.98, -0.35); g.add(flag);
+    g.userData.pulse = flame;
+    g.userData.light = fl;
+    return g;
+  }
+
+  /* ③ 风车 */
+  function makeWindmill(){
+    var g = new THREE.Group();
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.22, 16), mat(CLR.sandDark, {roughness: 0.95}));
+    base.position.y = 0.11; base.receiveShadow = true; g.add(base);
+    var tower = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.42, 1.5, 16), mat(CLR.white, {roughness: 0.8}));
+    tower.position.y = 0.88; tower.castShadow = true; g.add(tower);
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(CLR.blue, {roughness: 0.6}));
+    cap.position.y = 1.66; cap.castShadow = true; g.add(cap);
+    var blades = new THREE.Group();
+    var bladeMat = mat(CLR.white, {roughness: 0.75});
+    for(var i = 0; i < 4; i++){
+      var bl = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.72, 0.03), bladeMat);
+      bl.position.y = 0.36;
+      bl.castShadow = true;
+      var holder = new THREE.Group();
+      holder.rotation.z = i * Math.PI / 2;
+      holder.add(bl);
+      blades.add(holder);
+    }
+    blades.position.set(0, 1.72, 0.24);
+    g.add(blades);
+    g.userData.spin = blades;
+    return g;
+  }
+
+  /* ④ 出海小舟（在水面上） */
+  function makeBoat(){
+    var g = new THREE.Group();
+    var hullShape = new THREE.Shape();
+    hullShape.moveTo(-0.62, -0.24);
+    hullShape.lineTo(0.58, -0.3);
+    hullShape.quadraticCurveTo(0.86, 0, 0.58, 0.3);
+    hullShape.lineTo(-0.62, 0.24);
+    hullShape.quadraticCurveTo(-0.82, 0, -0.62, -0.24);
+    var hullGeo = new THREE.ExtrudeGeometry(hullShape, {depth: 0.26, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 1});
+    var hull = new THREE.Mesh(hullGeo, mat(CLR.wood, {roughness: 0.85}));
+    hull.rotation.x = -Math.PI / 2;
+    hull.position.y = 0.02;
+    hull.castShadow = true;
+    g.add(hull);
+    var mast = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.15, 6), mat(CLR.wood));
+    mast.position.set(0.02, 0.6, 0); mast.castShadow = true; g.add(mast);
+    var sailShape = new THREE.Shape();
+    sailShape.moveTo(0, 0);
+    sailShape.lineTo(0.62, 0.06);
+    sailShape.lineTo(0, 0.66);
+    sailShape.lineTo(0, 0);
+    var sail = new THREE.Mesh(new THREE.ShapeGeometry(sailShape),
+      new THREE.MeshStandardMaterial({color: CLR.sail, roughness: 0.9, side: THREE.DoubleSide}));
+    sail.position.set(0.04, 0.62, 0);
+    sail.castShadow = true;
+    g.add(sail);
+    g.userData.bob = true;
+    return g;
+  }
+
+  /* ⑤ 路标 */
+  function makeSignpost(){
+    var g = new THREE.Group();
+    var post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 1.5, 8), mat(CLR.wood, {roughness: 0.95}));
+    post.position.y = 0.75; post.castShadow = true; g.add(post);
+    var arms = [
+      {y: 1.32, rot: 0.35, w: 0.72},
+      {y: 1.06, rot: -0.9, w: 0.6},
+      {y: 0.82, rot: 2.2, w: 0.52}
+    ];
+    arms.forEach(function(a, i){
+      var arm = new THREE.Mesh(new THREE.BoxGeometry(a.w, 0.16, 0.05), mat(i === 0 ? CLR.green : (i === 1 ? CLR.sail : CLR.white), {roughness: 0.85}));
+      arm.position.set(Math.cos(a.rot) * a.w / 2, a.y, Math.sin(a.rot) * a.w / 2);
+      arm.rotation.y = -a.rot;
+      arm.castShadow = true;
+      g.add(arm);
+    });
+    var marker = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), new THREE.MeshBasicMaterial({color: 0xFFFFFF}));
+    marker.position.y = 1.56; g.add(marker);
+    g.userData.pulse = marker;
+    return g;
+  }
+
+  var builders = {me: makeLighthouse, top: makeCamp, alt: makeWindmill, new: makeBoat, next: makeSignpost};
+
+  ORDER.forEach(function(id){
+    if(!META[id]) return;
+    var p = POS[id];
+    var g = builders[id] ? builders[id]() : null;
+    if(!g) return;
+    g.position.set(Math.cos(p.angle) * p.r, 0.55 + (p.lift || 0), Math.sin(p.angle) * p.r);
+    g.userData.baseY = g.position.y;
+    g.userData.nodeId = id;
+    g.rotation.y = -p.angle + Math.PI / 2;
+    island.add(g);
+    hotspots.push(g);
+    registerPick(g, id);
+
+    /* 地面光圈 */
+    var halo = new THREE.Mesh(
+      new THREE.RingGeometry(0.52, 0.66, 32),
+      new THREE.MeshBasicMaterial({color: 0xFFFFFF, transparent: true, opacity: 0.55, side: THREE.DoubleSide})
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.position.set(g.position.x, g.position.y - 0.5 + 0.01, g.position.z);
+    halo.userData.nodeId = id;
+    island.add(halo);
+    g.userData.halo = halo;
+    pickables.push(halo);
+
+    /* 3D 标签 */
+    var n = META[id];
+    var el = document.createElement("div");
+    el.className = "tag";
+    el.innerHTML = '<div class="k">' + escapeHtml(n.kicker || "") + '</div>' +
+      '<div class="t">' + escapeHtml(n.label || "") + '</div>' +
+      (countOf(n) ? '<div class="c">' + countOf(n) + ' 条</div>' : '') +
+      '<span class="arrow"></span>';
+    el.addEventListener("click", function(){ openNode(id); });
+    el.addEventListener("mouseenter", function(){ hoverId = id; updateActiveTags(); });
+    el.addEventListener("mouseleave", function(){ hoverId = null; updateActiveTags(); });
+    document.getElementById("labels").appendChild(el);
+    tagEls[id] = el;
+  });
+
+  /* ============ 相机轨道 ============ */
+  var orbit = {theta: Math.PI * 0.28, phi: Math.PI * 0.34, radius: 15.5};
+  var target = {theta: orbit.theta, phi: orbit.phi, radius: orbit.radius};
+  var CENTER = new THREE.Vector3(0, 0.75, 0);
+  var autoSpin = true;
+  var idleTimer = 0;
+  var activeId = null;
+  var hoverId = null;
+
+  function focusOn(id){
+    var p = POS[id];
+    if(!p) return;
+    activeId = id;
+    autoSpin = false;
+    target.theta = p.angle + Math.PI / 2;
+    target.phi = Math.PI * 0.30;
+    target.radius = 11.5;
+    updateActiveTags();
+  }
+
+  function updateActiveTags(){
+    ORDER.forEach(function(id){
+      var el = tagEls[id];
+      if(!el) return;
+      el.classList.toggle("done", !!lit[id]);
+      el.classList.toggle("hover", hoverId === id || (activeId === id && !panel.classList.contains("on") ? false : activeId === id));
+    });
+  }
+
+  /* ============ 小狐狸导游 ============ */
+  var bubble = document.getElementById("bubble");
+  var bubbleTimer = 0;
+
+  function say(text, hold){
+    if(!bubble) return;
+    bubble.textContent = text;
+    bubble.classList.add("on");
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function(){ bubble.classList.remove("on"); }, hold || 5200);
+  }
+
+  var foxIntroDone = false;
+  function foxIntro(){
+    if(foxIntroDone || !bubble) return;
+    foxIntroDone = true;
+    say("我是岛上的向导，点我一下，我带你去下一处。");
+  }
+
+  var fox = new THREE.Group();
+  (function buildFox(){
+    var orange = mat(0xE8913F, {roughness: 0.85});
+    var cream = mat(0xFFF3E0, {roughness: 0.9});
+    var dark = mat(0x3A2A22, {roughness: 0.9});
+    var body = new THREE.Mesh(new THREE.CapsuleGeometry(0.135, 0.2, 4, 12), orange);
+    body.rotation.x = Math.PI / 2; body.position.y = 0.21; body.castShadow = true; fox.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 14, 12), orange);
+    head.position.set(0, 0.3, 0.19); head.castShadow = true; fox.add(head);
+    var snout = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 8), cream);
+    snout.rotation.x = Math.PI / 2; snout.position.set(0, 0.275, 0.3); fox.add(snout);
+    var nose = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 8), dark);
+    nose.position.set(0, 0.272, 0.36); fox.add(nose);
+    [-1, 1].forEach(function(s){
+      var ear = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.11, 5), orange);
+      ear.position.set(0.062 * s, 0.385, 0.175);
+      ear.rotation.z = 0.18 * s; ear.castShadow = true; fox.add(ear);
+      var eye = new THREE.Mesh(new THREE.SphereGeometry(0.017, 8, 8), dark);
+      eye.position.set(0.048 * s, 0.315, 0.275); fox.add(eye);
+    });
+    fox.userData.legs = [];
+    [[-0.07, 0.09], [0.07, 0.09], [-0.07, -0.09], [0.07, -0.09]].forEach(function(p){
+      var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.023, 0.02, 0.17, 6), dark);
+      leg.position.set(p[0], 0.085, p[1] + 0.02);
+      leg.castShadow = true;
+      fox.add(leg);
+      fox.userData.legs.push(leg);
+    });
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.3, 7), orange);
+    tail.rotation.x = -Math.PI / 2.5;
+    tail.position.set(0, 0.25, -0.2);
+    tail.castShadow = true;
+    fox.add(tail);
+    fox.userData.tail = tail;
+    var tip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), cream);
+    tip.position.set(0, 0.31, -0.33); fox.add(tip);
+    /* 透明大球：扩大点击范围，手指也好点 */
+    var hit = new THREE.Mesh(new THREE.SphereGeometry(0.34, 8, 6),
+      new THREE.MeshBasicMaterial({transparent: true, opacity: 0, depthWrite: false}));
+    hit.position.y = 0.22;
+    fox.add(hit);
+    fox.scale.setScalar(1.6);
+  })();
+  fox.position.set(0, 0.55, 0);
+  fox.userData.baseY = 0.55;
+  island.add(fox);
+  registerPick(fox, "__fox");
+
+  var FOX_R = 3.68;
+  var foxState = {angle: Math.PI * 1.15, mode: "roam", target: null, onArrive: null};
+  var foxBusy = false;
+  var foxPrev = {x: 0, z: 0};
+
+  function foxPlace(){
+    fox.position.x = Math.cos(foxState.angle) * FOX_R;
+    fox.position.z = Math.sin(foxState.angle) * FOX_R;
+  }
+  foxPlace();
+  foxPrev.x = fox.position.x;
+  foxPrev.z = fox.position.z;
+
+  function firstUnlit(){
+    for(var i = 0; i < ORDER.length; i++){
+      var id = ORDER[i];
+      if(!lit[id] && META[id]) return id;
+    }
+    return null;
+  }
+
+  function guideNext(){
+    if(foxBusy) return;
+    var nextId = firstUnlit();
+    if(!nextId){
+      say("五处都点亮了。想再看哪一处，直接点它就行。");
+      return;
+    }
+    closePanel();
+    foxBusy = true;
+    var nm = META[nextId];
+    say("跟我来，先看「" + (nm.label || "") + "」。");
+    foxState.mode = "walk";
+    foxState.target = POS[nextId] ? POS[nextId].angle : foxState.angle;
+    foxState.onArrive = function(){
+      foxBusy = false;
+      openNode(nextId);
+      say("到啦，这一处已经帮你打开了。");
+    };
+  }
+
+  function updateFox(dt, t){
+    var st = foxState;
+    var moving = true;
+    if(st.mode === "walk" && st.target != null){
+      var d = st.target - st.angle;
+      while(d > Math.PI) d -= Math.PI * 2;
+      while(d < -Math.PI) d += Math.PI * 2;
+      var v = dt * 1.1;
+      if(Math.abs(d) <= v){
+        st.angle = st.target;
+        st.mode = "roam";
+        var cb = st.onArrive;
+        st.onArrive = null;
+        st.target = null;
+        foxPlace();
+        moving = false;
+        if(cb) cb();
+      } else {
+        st.angle += (d > 0 ? 1 : -1) * v;
+        foxPlace();
+      }
+    } else {
+      st.angle += dt * 0.16;
+      foxPlace();
+    }
+    var dx = fox.position.x - foxPrev.x, dz = fox.position.z - foxPrev.z;
+    if(dx * dx + dz * dz > 1e-7) fox.rotation.y = Math.atan2(dx, dz);
+    foxPrev.x = fox.position.x;
+    foxPrev.z = fox.position.z;
+
+    var phase = t * (moving ? 12 : 2.4);
+    var amp = moving ? 0.6 : 0.06;
+    fox.userData.legs.forEach(function(leg, i){
+      leg.rotation.x = Math.sin(phase + (i % 2 ? Math.PI : 0)) * amp;
+    });
+    if(fox.userData.tail){
+      fox.userData.tail.rotation.x = -Math.PI / 2.5 + Math.sin(t * 1.7) * 0.1;
+      fox.userData.tail.rotation.z = Math.sin(t * 2.6) * 0.3;
+    }
+    fox.position.y = fox.userData.baseY + Math.abs(Math.sin(phase)) * (moving ? 0.035 : 0.012);
+  }
+
+  function bubbleFollow(){
+    if(!bubble || !bubble.classList.contains("on")) return;
+    var v = new THREE.Vector3(fox.position.x, fox.position.y + 0.92, fox.position.z);
+    v.project(camera);
+    if(v.z > 1){ bubble.classList.remove("on"); return; }
+    bubble.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth).toFixed(1) + "px";
+    bubble.style.top = ((-v.y * 0.5 + 0.5) * window.innerHeight).toFixed(1) + "px";
+  }
+
+  /* 拖拽 / 缩放 */
+  var dragging = false, lastX = 0, lastY = 0, downX = 0, downY = 0, downT = 0, moved = 0;
+  var pinchDist = 0;
+
+  function onDown(e){
+    if(e.target.closest && e.target.closest(".legend, .panel, .hud, .progress")) return;
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    downX = e.clientX; downY = e.clientY; downT = Date.now(); moved = 0;
+    autoSpin = false;
+    canvas.style.cursor = "grabbing";
+  }
+  function onMove(e){
+    if(dragging){
+      var dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      moved += Math.abs(dx) + Math.abs(dy);
+      target.theta -= dx * 0.006;
+      target.phi = clamp(target.phi - dy * 0.005, Math.PI * 0.12, Math.PI * 0.52);
+      idleTimer = 0;
+    } else {
+      hoverTest(e.clientX, e.clientY);
+    }
+  }
+  function onUp(e){
+    if(!dragging) return;
+    dragging = false;
+    canvas.style.cursor = "grab";
+    var dt = Date.now() - downT;
+    if(moved < 8 && dt < 600){
+      var hit = pickAt(e.clientX, e.clientY);
+      if(hit === "__fox") guideNext();
+      else if(hit) openNode(hit);
+      else closePanel();
+    }
+    idleTimer = 0;
+  }
+  function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
+
+  canvas.addEventListener("pointerdown", onDown);
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointercancel", function(){ dragging = false; canvas.style.cursor = "grab"; });
+
+  canvas.addEventListener("wheel", function(e){
+    e.preventDefault();
+    target.radius = clamp(target.radius + (e.deltaY > 0 ? 1.1 : -1.1), 8.5, 26);
+    autoSpin = false;
+    idleTimer = 0;
+  }, {passive: false});
+
+  /* 双指缩放 */
+  window.addEventListener("touchmove", function(e){
+    if(e.touches && e.touches.length === 2){
+      var dx = e.touches[0].clientX - e.touches[1].clientX;
+      var dy = e.touches[0].clientY - e.touches[1].clientY;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if(pinchDist){
+        target.radius = clamp(target.radius + (pinchDist - d) * 0.05, 8.5, 26);
+      }
+      pinchDist = d;
+    }
+  }, {passive: true});
+  window.addEventListener("touchend", function(){ pinchDist = 0; }, {passive: true});
+
+  var raycaster = new THREE.Raycaster();
+  var ndc = new THREE.Vector2();
+
+  function pickAt(cx, cy){
+    var rect = canvas.getBoundingClientRect();
+    ndc.x = ((cx - rect.left) / rect.width) * 2 - 1;
+    ndc.y = -((cy - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(ndc, camera);
+    var hits = raycaster.intersectObjects(pickables, false);
+    for(var i = 0; i < hits.length; i++){
+      var id = hits[i].object.userData.nodeId;
+      if(id) return id;
+    }
+    return null;
+  }
+
+  var hoverRaf = 0;
+  function hoverTest(cx, cy){
+    if(hoverRaf) return;
+    hoverRaf = requestAnimationFrame(function(){
+      hoverRaf = 0;
+      var id = pickAt(cx, cy);
+      if(id !== hoverId){
+        hoverId = id;
+        canvas.style.cursor = id ? "pointer" : "grab";
+        updateActiveTags();
+      }
+    });
+  }
+  canvas.style.cursor = "grab";
+
+  /* ============ 尺寸 ============ */
+  function resize(){
+    var w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / Math.max(h, 1);
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", function(){ setTimeout(resize, 120); });
+  resize();
+
+  /* ============ 渲染循环 ============ */
+  var clock = new THREE.Clock();
+  var tmpV = new THREE.Vector3();
+
+  function updateTags(){
+    var w = window.innerWidth, h = window.innerHeight;
+    ORDER.forEach(function(id){
+      var el = tagEls[id];
+      var g = hotspots.filter(function(o){ return o.userData.nodeId === id; })[0];
+      if(!el || !g) return;
+      tmpV.setFromMatrixPosition(g.matrixWorld);
+      tmpV.y += (id === "new" ? 1.5 : 2.35);
+      var dist = camera.position.distanceTo(tmpV);
+      tmpV.project(camera);
+      if(tmpV.z > 1){ el.style.display = "none"; return; }
+      el.style.display = "block";
+      var x = (tmpV.x * 0.5 + 0.5) * w;
+      var y = (-tmpV.y * 0.5 + 0.5) * h;
+      var scale = clamp(1.18 - dist * 0.016, 0.78, 1.08);
+      el.style.left = x.toFixed(1) + "px";
+      el.style.top = y.toFixed(1) + "px";
+      el.style.opacity = String(clamp(1.5 - dist * 0.045, 0.35, 1));
+      el.style.transform = "translate(-50%,-100%) scale(" + scale.toFixed(3) + ")";
+    });
+  }
+
+  function animate(){
+    requestAnimationFrame(animate);
+    var dt = Math.min(clock.getDelta(), 0.05);
+    var t = clock.elapsedTime;
+
+    /* 空闲自动旋转 */
+    idleTimer += dt;
+    if(idleTimer > 4 && !guideOpen && !panel.classList.contains("on")) autoSpin = true;
+    if(autoSpin && !dragging && !guideOpen) target.theta += dt * 0.075;
+
+    /* 相机平滑 */
+    orbit.theta += (target.theta - orbit.theta) * Math.min(1, dt * 6);
+    orbit.phi += (target.phi - orbit.phi) * Math.min(1, dt * 6);
+    orbit.radius += (target.radius - orbit.radius) * Math.min(1, dt * 5);
+    var sp = Math.sin(orbit.phi) * orbit.radius;
+    camera.position.set(
+      Math.cos(orbit.theta) * sp,
+      Math.cos(orbit.phi) * orbit.radius + CENTER.y,
+      Math.sin(orbit.theta) * sp
+    );
+    camera.lookAt(CENTER);
+
+    /* 水面波纹 */
+    rings.forEach(function(ring){
+      var p = (t * 0.28 + ring.userData.phase) % 1;
+      var s = 1 + p * 1.9;
+      ring.scale.set(s, s, s);
+      ring.material.opacity = 0.24 * (1 - p);
+    });
+    water.position.y = -0.55 + Math.sin(t * 0.7) * 0.03;
+
+    /* 地标动画 */
+    hotspots.forEach(function(g){
+      var id = g.userData.nodeId;
+      if(id === "alt" && g.userData.spin) g.userData.spin.rotation.z += dt * 1.1;
+      if(id === "new"){
+        g.position.y = g.userData.baseY + Math.sin(t * 1.1) * 0.07 + 0.02;
+        g.rotation.z = Math.sin(t * 0.9) * 0.045;
+      }
+      if(id === "me" && g.userData.pulse){
+        var k = 0.55 + Math.sin(t * 2.2) * 0.45;
+        g.userData.pulse.scale.setScalar(1 + Math.sin(t * 2.2) * 0.12);
+        if(g.userData.light) g.userData.light.intensity = 0.7 + k * 0.5;
+      }
+      if(id === "top" && g.userData.pulse){
+        g.userData.pulse.scale.set(1, 1 + Math.sin(t * 6) * 0.18, 1);
+        if(g.userData.light) g.userData.light.intensity = 0.85 + Math.sin(t * 6) * 0.25;
+      }
+      if(id === "next" && g.userData.pulse){
+        g.userData.pulse.scale.setScalar(1 + Math.sin(t * 3) * 0.1);
+      }
+      /* 悬停 / 选中放大 */
+      var isHover = (hoverId === id);
+      var s2 = isHover ? 1.07 : 1.0;
+      g.scale.lerp(new THREE.Vector3(s2, s2, s2), Math.min(1, dt * 8));
+      if(g.userData.halo){
+        var on = lit[id] || isHover;
+        g.userData.halo.material.opacity = on ? 0.85 : 0.5;
+        g.userData.halo.material.color.set(on ? 0xAAECA7 : 0xFFFFFF);
+      }
+    });
+
+    updateFox(dt, t);
+    updateTags();
+    bubbleFollow();
+    renderer.render(scene, camera);
+  }
+
+  updateProgress();
+  animate();
+
+  /* 首次提示性地转一点，让人知道可以拖 */
+  setTimeout(function(){ autoSpin = true; }, 1200);
+  /* 指南关掉之后，小狐狸再开口介绍自己 */
+  if(!guideOpen) setTimeout(foxIntro, 900);
+
+  window.__ISLAND_DEBUG__ = {
+    hotspots: hotspots.map(function(g){ return g.userData.nodeId; }),
+    nodes: nodes.map(function(n){ return n.id; })
+  };
+})();
+</script>
+</body>
+</html>

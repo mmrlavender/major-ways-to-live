@@ -1,0 +1,3517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>__TITLE__</title>
+<style>
+:root{
+  --cream:#FAF3E2; --paper:#FFFDF6; --pine:#2F5D46; --pine-deep:#1E3D2E;
+  --moss:#6E8F5A; --rust:#A8642F; --sky:#7FB4D9; --ink:#1C2A24; --ink-soft:#4E6156;
+  --line:#E2D6BE; --card:#FFFDF7; --shadow:0 18px 44px rgba(28,42,36,.16);
+  --shadow-s:0 8px 22px rgba(28,42,36,.13);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  color:var(--ink);background:linear-gradient(180deg,#E6F0F7 0%,#F1F6EC 52%,#FAF3E2 100%);
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+#scene{position:fixed;inset:0;z-index:0;touch-action:none}
+#scene canvas{display:block;width:100%;height:100%}
+
+/* ---------- 地标标签层 ---------- */
+#labels{position:fixed;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.tag{
+  position:absolute;transform:translate(-50%,-100%);margin-top:-34px;pointer-events:auto;cursor:pointer;
+  display:flex;align-items:center;gap:6px;padding:6px 11px 6px 9px;border:1px solid rgba(226,214,190,.95);
+  border-radius:999px;background:rgba(255,253,246,.94);box-shadow:var(--shadow-s);
+  font-size:13px;line-height:1.15;color:var(--ink);white-space:nowrap;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease;
+  font-family:inherit;
+}
+.tag:after{
+  content:"";position:absolute;left:50%;top:100%;width:1px;height:46px;
+  background:linear-gradient(180deg,rgba(47,93,70,.55),rgba(47,93,70,0));
+}
+.tag:hover,.tag.hover{background:#FFFFFF;border-color:var(--pine);transform:translate(-50%,-100%) scale(1.045);box-shadow:0 12px 26px rgba(28,42,36,.2)}
+.tag .tag-k{font-weight:700;color:var(--pine-deep);letter-spacing:.01em}
+.tag .tag-t{color:var(--ink-soft)}
+.tag .tag-c{
+  min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--line);
+  color:var(--ink-soft);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+.tag.done{background:rgba(47,93,70,.95);border-color:rgba(47,93,70,.95);color:#F4FBEF}
+.tag.done .tag-k{color:#FFFFFF}
+.tag.done .tag-t{color:rgba(244,251,239,.82)}
+.tag.done .tag-c{background:rgba(255,255,255,.22);color:#FFFFFF}
+
+/* ---------- HUD ---------- */
+.hud{
+  position:fixed;left:20px;top:18px;z-index:6;max-width:min(52vw,460px);
+  padding:13px 17px 12px;border-radius:16px;background:rgba(255,253,246,.9);
+  border:1px solid rgba(226,214,190,.9);box-shadow:var(--shadow-s);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.hud-major{font-size:19px;font-weight:800;letter-spacing:.01em;color:var(--pine-deep);display:flex;align-items:center;gap:8px}
+.hud-name{position:relative;padding-right:24px}
+.hud-rename{
+  position:absolute;right:0;top:1px;width:21px;height:21px;padding:0;border:none;border-radius:6px;
+  background:transparent;color:var(--ink-soft);font-size:13px;cursor:pointer;line-height:21px;text-align:center;
+}
+.hud-rename:hover{background:#EFE7D4;color:var(--pine)}
+.hud-input{
+  display:none;width:100%;margin-top:2px;padding:4px 7px;border:1px solid var(--pine);border-radius:8px;
+  background:#FFFFFF;color:var(--ink);font-size:16px;font-weight:700;font-family:inherit;outline:none;
+}
+.hud-input.on{display:block}
+.hud-title.on{display:none}
+.hud-sub{margin-top:6px;font-size:12.5px;line-height:1.5;color:var(--ink-soft)}
+.hud-sub b{color:var(--rust);font-weight:700}
+
+/* ---------- 进度 ---------- */
+.progress{
+  position:fixed;right:20px;top:18px;z-index:6;padding:9px 15px;border-radius:999px;
+  background:rgba(30,61,46,.9);color:#EEF6E8;font-size:13px;font-weight:600;letter-spacing:.02em;
+  box-shadow:var(--shadow-s);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.progress span{font-size:16px;font-weight:800;color:#FFE3A8}
+
+/* ---------- 提示 ---------- */
+.hint{
+  position:fixed;left:20px;bottom:76px;z-index:6;max-width:min(60vw,420px);
+  padding:8px 13px;border-radius:11px;background:rgba(255,253,246,.84);
+  border:1px solid rgba(226,214,190,.8);color:var(--ink-soft);font-size:12.5px;line-height:1.5;
+  box-shadow:0 6px 16px rgba(28,42,36,.1);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+
+/* ---------- 图例 ---------- */
+.legend{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:6;
+  display:flex;gap:7px;flex-wrap:wrap;justify-content:center;max-width:min(94vw,860px);
+}
+.legend button{
+  display:flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;cursor:pointer;
+  border:1px solid rgba(226,214,190,.95);background:rgba(255,253,246,.9);color:var(--ink);
+  font-size:12.5px;font-family:inherit;box-shadow:0 5px 14px rgba(28,42,36,.1);
+  transition:background .15s ease,color .15s ease,border-color .15s ease,transform .15s ease;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.legend button:hover{background:#FFFFFF;border-color:var(--pine);transform:translateY(-1px)}
+.legend .dot{width:7px;height:7px;border-radius:50%;background:var(--rust);flex:none}
+.legend button.done{background:rgba(47,93,70,.93);border-color:rgba(47,93,70,.93);color:#F2FAEC}
+.legend button.done .dot{background:#FFE3A8}
+
+/* ---------- 页脚 ---------- */
+.foot{
+  position:fixed;right:20px;bottom:20px;z-index:6;max-width:min(38vw,330px);
+  font-size:11.5px;line-height:1.55;color:rgba(78,97,86,.85);text-align:right;
+}
+
+/* ---------- 天气与时间 ---------- */
+.wxbar{
+  position:fixed;right:20px;top:70px;z-index:6;display:flex;flex-direction:column;gap:8px;align-items:flex-end;
+}
+.wxrow{display:flex;gap:6px;padding:6px;border-radius:999px;background:rgba(255,253,246,.9);
+  border:1px solid rgba(226,214,190,.9);box-shadow:var(--shadow-s);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.wx{
+  border:none;border-radius:999px;padding:6px 11px;background:transparent;color:var(--ink-soft);
+  font-size:12.5px;font-family:inherit;cursor:pointer;transition:background .15s ease,color .15s ease;
+}
+.wx:hover{background:#F0E8D5;color:var(--pine-deep)}
+.wx.on{background:var(--pine);color:#FFFFFF;box-shadow:0 4px 10px rgba(47,93,70,.28)}
+.wxtime{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:rgba(255,253,246,.9);
+  border:1px solid rgba(226,214,190,.9);box-shadow:var(--shadow-s);font-size:12px;color:var(--ink-soft);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.wxtime input[type=range]{width:96px;accent-color:#2F5D46;height:16px;cursor:pointer}
+.wxtime b{color:var(--pine-deep);font-weight:700;min-width:28px;text-align:center}
+#auto{display:none}
+#fps,#wstate{font-variant-numeric:tabular-nums}
+.wxstate{padding:5px 11px;border-radius:999px;background:rgba(30,61,46,.82);color:#EAF3E4;font-size:11.5px;
+  box-shadow:0 5px 14px rgba(28,42,36,.14)}
+
+/* ---------- 气泡 ---------- */
+.bubble{
+  position:fixed;z-index:7;left:0;top:0;transform:translate(-50%,-100%) scale(.94);
+  max-width:270px;padding:9px 13px;border-radius:13px;background:rgba(30,61,46,.94);color:#F3FAEC;
+  font-size:12.5px;line-height:1.55;opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;
+  box-shadow:0 12px 26px rgba(20,34,26,.24);
+}
+.bubble.on{opacity:1;transform:translate(-50%,-100%) scale(1)}
+.bubble:after{
+  content:"";position:absolute;left:50%;top:100%;transform:translateX(-50%);
+  border:6px solid transparent;border-top-color:rgba(30,61,46,.94);
+}
+
+/* ---------- 开场指南 ---------- */
+.guide{
+  position:fixed;inset:0;z-index:12;display:none;align-items:center;justify-content:center;
+  background:rgba(22,36,30,.42);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:20px;
+}
+.guide.on{display:flex}
+.guide-card{
+  width:min(92vw,520px);max-height:86vh;overflow:auto;padding:24px 24px 20px;border-radius:22px;
+  background:var(--card);border:1px solid var(--line);box-shadow:0 30px 70px rgba(20,34,26,.3);
+  animation:pop .28s ease-out;
+}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.g-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.g-eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.14em;color:var(--rust);text-transform:uppercase}
+.g-head h2{margin:5px 0 0;font-size:21px;line-height:1.28;color:var(--pine-deep)}
+.g-close{
+  flex:none;width:28px;height:28px;border:none;border-radius:9px;background:#F1EADA;color:var(--ink-soft);
+  font-size:15px;cursor:pointer;line-height:1;
+}
+.g-close:hover{background:#E6DDC8;color:var(--pine-deep)}
+.g-lead{margin:12px 0 14px;font-size:13.5px;line-height:1.7;color:var(--ink-soft)}
+.g-list{display:flex;flex-direction:column;gap:9px;margin:0 0 14px}
+.g-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.6;color:var(--ink)}
+.g-item i{
+  flex:none;width:19px;height:19px;border-radius:50%;background:#EFE7D4;color:var(--pine-deep);
+  font-style:normal;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.g-item b{font-weight:700;color:var(--pine-deep)}
+.g-note{
+  margin:0 0 16px;padding:10px 12px;border-left:3px solid var(--moss);border-radius:0 9px 9px 0;
+  background:#F5F2E6;font-size:12.5px;line-height:1.65;color:var(--ink-soft);
+}
+.g-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.g-start{
+  padding:10px 20px;border:none;border-radius:11px;background:var(--pine);color:#FFFFFF;
+  font-size:13.5px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 10px 22px rgba(47,93,70,.28);
+}
+.g-start:hover{background:var(--pine-deep)}
+
+/* ---------- 遮罩与抽屉 ---------- */
+.scrim{
+  position:fixed;inset:0;z-index:9;background:rgba(20,32,26,.32);opacity:0;pointer-events:none;
+  transition:opacity .22s ease;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+}
+.scrim.on{opacity:1;pointer-events:auto}
+.panel{
+  position:fixed;right:0;top:0;bottom:0;z-index:10;width:min(94vw,440px);
+  background:var(--paper);border-left:1px solid var(--line);box-shadow:-24px 0 60px rgba(20,34,26,.2);
+  transform:translateX(104%);transition:transform .3s cubic-bezier(.32,.72,.28,1);
+  display:flex;flex-direction:column;
+}
+.panel.on{transform:none}
+.p-head{padding:18px 20px 14px;border-bottom:1px solid var(--line);position:relative;background:var(--card)}
+.p-kicker{font-size:11.5px;font-weight:700;letter-spacing:.1em;color:var(--rust)}
+.p-title{margin:5px 0 0;font-size:20px;font-weight:800;color:var(--pine-deep);padding-right:34px}
+.p-close{
+  position:absolute;right:14px;top:16px;width:28px;height:28px;border:none;border-radius:9px;
+  background:#F1EADA;color:var(--ink-soft);font-size:15px;cursor:pointer;line-height:1;
+}
+.p-close:hover{background:#E6DDC8;color:var(--pine-deep)}
+.p-body{padding:16px 20px 28px;overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
+.p-lead{margin:0 0 14px;font-size:13.5px;line-height:1.78;color:var(--ink)}
+.p-tail{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:12.5px;line-height:1.7;color:var(--ink-soft)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.chip{padding:4px 10px;border-radius:999px;background:#EFE7D4;color:var(--pine-deep);font-size:11.5px;font-weight:600}
+.say{display:flex;gap:9px;margin:0 0 9px;font-size:13px;line-height:1.68;color:var(--ink)}
+.say .idx{
+  flex:none;width:19px;height:19px;border-radius:50%;background:var(--pine);color:#FFFFFF;
+  font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.card{
+  margin:0 0 11px;padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:var(--card);
+  box-shadow:0 3px 10px rgba(28,42,36,.05);
+}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.card-t{font-size:14.5px;font-weight:800;line-height:1.4;color:var(--pine-deep)}
+.badge{
+  flex:none;padding:3px 8px;border-radius:999px;background:var(--pine);color:#FFFFFF;
+  font-size:10.5px;font-weight:700;letter-spacing:.02em;
+}
+.badge.alt{background:var(--rust)}
+.card-oneline{margin-top:5px;font-size:12.5px;line-height:1.62;color:var(--ink-soft)}
+.kv{margin:9px 0 0;display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:12.5px;line-height:1.6}
+.kv dt{color:var(--ink-soft);white-space:nowrap;font-weight:600}
+.kv dd{margin:0;color:var(--ink)}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tags span{padding:2px 8px;border-radius:6px;background:#F1EADA;color:var(--pine-deep);font-size:11.5px}
+.why,.cost{margin-top:9px;padding:8px 10px;border-radius:9px;font-size:12px;line-height:1.62}
+.why{background:#F2F5E9;color:#3C5B3F;border-left:3px solid var(--moss)}
+.cost{background:#FBF0E8;color:#8A5232;border-left:3px solid var(--rust)}
+.step{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px;font-size:13px;line-height:1.66}
+.step .box{
+  flex:none;width:16px;height:16px;margin-top:2px;border:2px solid var(--moss);border-radius:4px;background:#F7FBF2;
+}
+.step .from{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--rust);margin-bottom:2px}
+.step .txt{color:var(--ink)}
+
+/* ---------- 回退与加载 ---------- */
+.fallback{
+  position:fixed;inset:0;z-index:2;padding:32px 22px;overflow:auto;background:var(--cream);
+  display:flex;flex-direction:column;align-items:center;
+}
+.fallback[hidden]{display:none}
+.fallback h2{margin:0 0 8px;font-size:22px;color:var(--pine-deep);text-align:center}
+.fallback>p{margin:0 0 18px;max-width:560px;font-size:13px;line-height:1.7;color:var(--ink-soft);text-align:center}
+.fb-item{
+  width:min(92vw,640px);margin:0 0 12px;padding:13px 15px;border-radius:13px;background:var(--card);
+  border:1px solid var(--line);font-size:13px;line-height:1.7;color:var(--ink);
+}
+.fb-item b{display:block;margin-bottom:4px;color:var(--pine-deep)}
+.fb-item p{margin:3px 0}
+#loading{
+  position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  background:linear-gradient(180deg,#E6F0F7,#F7F6E9 60%,#FAF3E2);color:var(--pine-deep);
+  font-size:13px;letter-spacing:.06em;transition:opacity .45s ease;z-index:20;
+}
+#loading .ring{
+  width:34px;height:34px;border-radius:50%;border:3px solid rgba(47,93,70,.18);border-top-color:var(--pine);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+#ui{display:none}
+
+@media (max-width:820px){
+  .hud{left:12px;top:12px;right:12px;max-width:none;padding:11px 13px}
+  .hud-major{font-size:16.5px}
+  .progress{right:12px;top:auto;bottom:auto;top:calc(12px + 96px);padding:6px 11px;font-size:11.5px}
+  .hint{display:none}
+  .wxbar{right:12px;top:calc(12px + 136px);gap:6px}
+  .wx{padding:5px 9px;font-size:11.5px}
+  .wxtime{display:none}
+  .foot{display:none}
+  .legend{bottom:12px;gap:5px;max-width:96vw}
+  .legend button{padding:6px 10px;font-size:11.5px}
+  .tag{font-size:11.5px;padding:4px 9px}
+  .tag .tag-t{display:none}
+  .panel{width:100vw}
+  .guide-card{padding:20px 18px 16px}
+  .g-head h2{font-size:18.5px}
+}
+@media print{.hud,.hint,.legend,.foot,.wxbar,.progress,.tag,#scene{display:none}}
+</style>
+</head>
+<body>
+<div id="scene"></div>
+<div id="labels"></div>
+
+<header class="hud">
+  <div class="hud-major">
+    <span class="hud-name">
+      <span class="hud-title on" id="hudTitle">__MAJOR__</span>
+      <input class="hud-input" id="hudInput" type="text" maxlength="28" spellcheck="false" aria-label="给探索岛起个名字">
+      <button class="hud-rename" id="hudRename" type="button" title="给这座岛改个名字">✎</button>
+    </span>
+  </div>
+  <div class="hud-sub" id="hudSub">把专业、兴趣和现实排成一条<strong>走得下去</strong>的路。五处地标，一处一个答案。</div>
+</header>
+
+<div class="progress" id="progress">已点亮 <span>0</span> / 5</div>
+
+<div class="wxbar">
+  <div class="wxrow" id="wxrow">
+    <button class="wx on" type="button" data-weather="clear">晴</button>
+    <button class="wx" type="button" data-weather="rain">阵雨</button>
+    <button class="wx" type="button" data-weather="fog">雾</button>
+    <button class="wx" type="button" data-weather="snow">飘雪</button>
+  </div>
+  <div class="wxtime">
+    <span>晨</span>
+    <input type="range" id="time" min="0" max="1" step="0.001" value="0.16" aria-label="一天里的时间">
+    <span>暮</span>
+    <b id="tlabel">清晨</b>
+    <input type="checkbox" id="auto" checked>
+    <span id="wstate" class="wxstate">晴</span>
+    <span id="fps"></span>
+  </div>
+</div>
+
+<div class="hint" id="hint">拖拽旋转 · 滚轮或双指缩放 · 点地标看内容 · 点小狐狸让它带路</div>
+
+<div class="bubble" id="bubble"></div>
+
+<div id="guide" class="guide">
+  <div class="guide-card">
+    <div class="g-head">
+      <div>
+        <div class="g-eyebrow">Snowline Pastures · 职业探索</div>
+        <h2 id="guideTitle">在牧场里，找你的 N 种活法</h2>
+      </div>
+      <button class="g-close" id="guideClose" type="button" aria-label="关闭">✕</button>
+    </div>
+    <p class="g-lead">雪线之下有一片牧场小镇：木屋、钟楼、奶酪工坊、缆车站都在这儿。五处地标，各挂着你想问自己的一个问题。</p>
+    <div class="g-list">
+      <div class="g-item"><i>1</i><span><b>环顾牧场</b>：拖拽旋转，滚轮或双指缩放，雪峰、溪流和草场都在同一幅里。</span></div>
+      <div class="g-item"><i>2</i><span><b>看标签</b>：飘在地标上方的小牌子，点它就从右侧抽屉打开内容。</span></div>
+      <div class="g-item"><i>3</i><span><b>跟着向导</b>：看到那只小狐狸就点它一下，它会带你去下一处还没看的地标。</span></div>
+      <div class="g-item"><i>4</i><span><b>切换天气</b>：右上角换晴、阵雨、雾、飘雪；下方滑杆把一天从清晨拖到傍晚，屋里会亮灯。</span></div>
+      <div class="g-item"><i>5</i><span><b>点亮五处</b>：看完一处点亮一处，底部进度会记着。</span></div>
+    </div>
+    <p class="g-note">你的答案不会被上传：这一页只在你的电脑上打开，改名和进度都存在本机。</p>
+    <div class="g-foot">
+      <button class="g-start" id="guideStart" type="button">进牧场看看</button>
+      <span style="font-size:12px;color:var(--ink-soft)">按 Esc 也能关闭</span>
+    </div>
+  </div>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<footer class="foot" id="foot"></footer>
+
+<div class="scrim" id="scrim"></div>
+
+<aside class="panel" id="panel" aria-hidden="true">
+  <div class="p-head">
+    <div class="p-kicker" id="pKicker"></div>
+    <h2 class="p-title" id="pTitle"></h2>
+    <button class="p-close" id="pClose" type="button" aria-label="关闭">✕</button>
+  </div>
+  <div class="p-body" id="pBody"></div>
+</aside>
+
+<div class="fallback" id="fallback" hidden></div>
+<div id="loading"><div class="ring"></div><div>正在铺开牧场…</div></div>
+<div id="ui"></div>
+
+<script>/*__THREE__*/</script>
+<script>
+/* ============================================================
+   岛屿交互层（数据 / 标签 / 抽屉 / 进度 / 改名 / 指南 / 回退）
+   与三维场景层通过 window.ISLAND 通信
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var DATA = /*__DATA__*/;
+  var ORDER = ['me', 'top', 'alt', 'new', 'next'];
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function arr(v) {
+    if (v == null) return [];
+    if (Array.isArray(v)) return v.filter(function (x) { return x != null && String(x).trim() !== ''; });
+    return String(v).trim() === '' ? [] : [v];
+  }
+
+  var nodes = Array.isArray(DATA.nodes) ? DATA.nodes : [];
+  var META = {};
+  nodes.forEach(function (n) { if (n && n.id) META[n.id] = n; });
+
+  var lit = {};
+  var activeId = null;
+  var tagEls = {};
+
+  /* ---------- 页脚 ---------- */
+  (function foot() {
+    var el = $('foot');
+    if (!el) return;
+    var upd = DATA.updated ? '更新于 ' + DATA.updated : '';
+    el.innerHTML = esc(DATA.major || '') + ' · ' + esc(upd) +
+      '<br>内容来自专业库与公开招聘信息，具体岗位以企业实际为准。' +
+      '<br>本页离线运行，改名与进度只存本机。';
+  })();
+
+  /* ---------- 名字（HUD + localStorage） ---------- */
+  var NAME_SUFFIX = '·职业探索岛';
+  var nameKey = 'island-name:' + (DATA.major || '');
+
+  function normIslandName(raw) {
+    var s = String(raw || '').replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+    if (s.length > 28) s = s.slice(0, 28);
+    return s;
+  }
+  function defaultName() {
+    return DATA.island_name || ((DATA.major || '') + NAME_SUFFIX);
+  }
+  function currentName() {
+    try {
+      var v = normIslandName(localStorage.getItem(nameKey));
+      if (v) return v;
+    } catch (e) { }
+    return defaultName();
+  }
+  function paintName() {
+    var t = $('hudTitle');
+    if (t) t.textContent = currentName();
+    document.title = currentName() + ' · ' + (DATA.major || '');
+  }
+  var editing = false;
+  function beginName() {
+    var inp = $('hudInput'), t = $('hudTitle');
+    if (!inp || !t) return;
+    editing = true;
+    inp.value = currentName();
+    inp.classList.add('on');
+    t.classList.add('off');
+    t.style.display = 'none';
+    inp.focus();
+    inp.select();
+  }
+  function endName(save) {
+    var inp = $('hudInput'), t = $('hudTitle');
+    if (!inp || !t) return;
+    if (save) {
+      var v = normIslandName(inp.value);
+      if (v) {
+        try { localStorage.setItem(nameKey, v); } catch (e) { }
+        paintName();
+        say('好名字。现在这片牧场叫「' + v + '」。', 3400);
+      }
+    }
+    editing = false;
+    inp.classList.remove('on');
+    t.style.display = '';
+    t.classList.remove('off');
+  }
+  document.addEventListener('click', function (e) {
+    if (!editing) return;
+    if (e.target && (e.target.id === 'hudInput' || e.target.id === 'hudRename')) return;
+    endName(true);
+  });
+  (function bindName() {
+    var btn = $('hudRename'), inp = $('hudInput');
+    if (btn) btn.addEventListener('click', function (e) { e.stopPropagation(); beginName(); });
+    if (inp) {
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); endName(true); }
+        else if (e.key === 'Escape') { e.preventDefault(); endName(false); }
+      });
+      inp.addEventListener('blur', function () { if (editing) endName(true); });
+    }
+    var sub = $('hudSub');
+    if (sub) sub.innerHTML = esc(DATA.major || '') + ' · 把专业、兴趣和现实排成一条<b>走得下去</b>的路。五处地标，一处一个答案。';
+    paintName();
+  })();
+
+  /* ---------- 气泡 ---------- */
+  var bubbleEl = $('bubble');
+  var bubbleTimer = 0;
+  function say(text, dur) {
+    if (!bubbleEl || !text) return;
+    bubbleEl.textContent = text;
+    bubbleEl.classList.add('on');
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function () { bubbleEl.classList.remove('on'); }, dur || 3000);
+  }
+
+  /* ---------- 抽屉内容 ---------- */
+  var panel = $('panel'), scrim = $('scrim'), pKicker = $('pKicker'), pTitle = $('pTitle'), pBody = $('pBody');
+
+  function kvRow(label, val) {
+    var list = arr(val);
+    if (!list.length) return '';
+    var inner = list.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
+    return '<dt>' + esc(label) + '</dt><dd><div class="tags">' + inner + '</div></dd>';
+  }
+  function plainRow(label, val) {
+    var list = arr(val);
+    if (!list.length) return '';
+    return '<dt>' + esc(label) + '</dt><dd>' + esc(list.join('、')) + '</dd>';
+  }
+
+  function renderPathCard(it) {
+    var badge = it && it.fit ? String(it.fit) : '';
+    var bad = badge ? '<span class="badge' + (/备选|alt/i.test(badge) ? ' alt' : '') + '">' + esc(badge) + '</span>' : '';
+    var kv = plainRow('常见岗位', it.roles) + plainRow('要会的本事', it.skills) +
+      plainRow('怎么进去', it.access) + plainRow('适合谁', it.match);
+    return '<div class="card">' +
+      '<div class="card-h"><div class="card-t">' + esc(it.name || '（未命名）') + '</div>' + bad + '</div>' +
+      (it.oneline ? '<div class="card-oneline">' + esc(it.oneline) + '</div>' : '') +
+      (kv ? '<dl class="kv">' + kv + '</dl>' : '') +
+      (it.why ? '<div class="why"><b>为什么排给你：</b>' + esc(it.why) + '</div>' : '') +
+      (it.cost ? '<div class="cost"><b>要付的代价：</b>' + esc(it.cost) + '</div>' : '') +
+      '</div>';
+  }
+  function renderJobCard(it) {
+    var cat = it && it.category ? '<span class="badge alt">' + esc(it.category) + '</span>' : '';
+    var kv = plainRow('常见岗位', it.roles) + plainRow('和你专业的关系', it.bridge) +
+      plainRow('怎么进去', it.access) + plainRow('适合谁', it.match);
+    return '<div class="card">' +
+      '<div class="card-h"><div class="card-t">' + esc(it.name || '（未命名）') + '</div>' + cat + '</div>' +
+      (it.oneline ? '<div class="card-oneline">' + esc(it.oneline) + '</div>' : '') +
+      (kv ? '<dl class="kv">' + kv + '</dl>' : '') +
+      (it.cost ? '<div class="cost"><b>要付的代价：</b>' + esc(it.cost) + '</div>' : '') +
+      '</div>';
+  }
+
+  function buildBody(n) {
+    var html = '';
+    if (n.lead) html += '<p class="p-lead">' + esc(n.lead) + '</p>';
+    var kind = n.kind || 'paths';
+    if (kind === 'profile') {
+      var chips = arr(n.chips).length ? arr(n.chips) : arr(DATA.profileChips);
+      if (chips.length) {
+        html += '<div class="chip-row">' + chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') + '</div>';
+      }
+      arr(n.says).forEach(function (s, i) {
+        html += '<div class="say"><span class="idx">' + (i + 1) + '</span><span>' + esc(s) + '</span></div>';
+      });
+    } else if (kind === 'steps') {
+      arr(n.items).forEach(function (it) {
+        html += '<div class="step"><span class="box"></span><span>' +
+          (it && it.from ? '<div class="from">' + esc(it.from) + '</div>' : '') +
+          '<div class="txt">' + esc(it && (it.text || it.name) || '') + '</div></span></div>';
+      });
+    } else if (kind === 'jobs') {
+      arr(n.items).forEach(function (it) { html += renderJobCard(it || {}); });
+    } else {
+      arr(n.items).forEach(function (it) { html += renderPathCard(it || {}); });
+    }
+    if (n.tail) html += '<div class="p-tail">' + esc(n.tail) + '</div>';
+    if (!html) html = '<p class="p-lead">这一项暂时没有内容。</p>';
+    return html;
+  }
+
+  function updateProgress() {
+    var k = 0;
+    ORDER.forEach(function (id) { if (lit[id] && META[id]) k++; });
+    var p = $('progress');
+    if (p) p.innerHTML = '已点亮 <span>' + k + '</span> / 5';
+    var lg = $('legend');
+    if (lg && lg.children) {
+      for (var i = 0; i < lg.children.length; i++) {
+        var b = lg.children[i];
+        var id = b.getAttribute('data-id');
+        b.classList.toggle('done', !!(id && lit[id]));
+      }
+    }
+    ORDER.forEach(function (id) {
+      if (tagEls[id]) tagEls[id].classList.toggle('done', !!lit[id]);
+    });
+  }
+
+  function openNode(id) {
+    var n = META[id];
+    if (!n) return;
+    activeId = id;
+    if (pKicker) pKicker.textContent = n.kicker || '';
+    if (pTitle) pTitle.textContent = n.label || '';
+    if (pBody) pBody.innerHTML = buildBody(n);
+    if (panel) { panel.classList.add('on'); panel.setAttribute('aria-hidden', 'false'); }
+    if (scrim) scrim.classList.add('on');
+    if (pBody) pBody.scrollTop = 0;
+    lit[id] = true;
+    updateProgress();
+    if (window.ISLAND && typeof window.ISLAND.focus === 'function') window.ISLAND.focus(id);
+  }
+  function closePanel() {
+    activeId = null;
+    if (panel) { panel.classList.remove('on'); panel.setAttribute('aria-hidden', 'true'); }
+    if (scrim) scrim.classList.remove('on');
+    if (window.ISLAND && typeof window.ISLAND.onClosed === 'function') window.ISLAND.onClosed();
+  }
+
+  (function bindPanel() {
+    var pc = $('pClose');
+    if (pc) pc.addEventListener('click', closePanel);
+    if (scrim) scrim.addEventListener('click', closePanel);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        var g = $('guide');
+        if (g && g.classList.contains('on')) { closeGuide(); return; }
+        if (panel && panel.classList.contains('on')) { closePanel(); return; }
+        if (editing) endName(false);
+      }
+    });
+  })();
+
+  /* ---------- 图例 ---------- */
+  (function legend() {
+    var box = $('legend');
+    if (!box) return;
+    ORDER.forEach(function (id) {
+      var n = META[id];
+      if (!n) return;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('data-id', id);
+      var kick = String(n.kicker || '').replace(/^[①②③④⑤⑥⑦⑧⑨⑩\s]+/, '');
+      b.innerHTML = '<span class="dot"></span>' + esc(kick || n.label || '');
+      b.addEventListener('click', function () { openNode(id); });
+      box.appendChild(b);
+    });
+  })();
+
+  /* ---------- 开场指南 ---------- */
+  var guide = $('guide');
+  var guideOn = true;
+  function closeGuide(started) {
+    guideOn = false;
+    if (guide) guide.classList.remove('on');
+    if (started && window.ISLAND && typeof window.ISLAND.intro === 'function') window.ISLAND.intro();
+  }
+  (function bindGuide() {
+    if (guide) guide.classList.add('on');
+    var gs = $('guideStart'), gc = $('guideClose');
+    if (gs) gs.addEventListener('click', function () { closeGuide(true); });
+    if (gc) gc.addEventListener('click', function () { closeGuide(false); });
+  })();
+
+  /* ---------- 下一处未点亮 ---------- */
+  function nextTarget() {
+    for (var i = 0; i < ORDER.length; i++) {
+      if (META[ORDER[i]] && !lit[ORDER[i]]) return ORDER[i];
+    }
+    return null;
+  }
+
+  /* ---------- WebGL 回退 ---------- */
+  function webglOK() {
+    try {
+      var c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl')));
+    } catch (e) { return false; }
+  }
+  function renderFallback() {
+    var box = $('fallback');
+    if (!box) return;
+    var html = '<h2>' + esc(currentName()) + '</h2><p>' + esc(DATA.major || '') +
+      ' · 想看可旋转的牧场，请用 Chrome 或 Edge 打开本文件（需要浏览器开启硬件加速）。下面是同样的内容。</p>';
+    ORDER.forEach(function (id) {
+      var n = META[id];
+      if (!n) return;
+      html += '<div class="fb-item"><b>' + esc((n.kicker || '') + ' ' + (n.label || '')) + '</b>';
+      if (n.lead) html += '<p>' + esc(n.lead) + '</p>';
+      arr(n.says).forEach(function (s) { html += '<p>· ' + esc(s) + '</p>'; });
+      arr(n.items).forEach(function (it) {
+        if (!it) return;
+        html += '<p>· ' +
+          (it.name ? '<b style="display:inline;color:#A8642F">' + esc(it.name) + '</b>' : '') +
+          (it.oneline ? '：' + esc(it.oneline) : '') +
+          (it.text ? ' ' + esc(it.text) : '') +
+          (it.from ? '（' + esc(it.from) + '）' : '') + '</p>';
+      });
+      if (n.tail) html += '<p>' + esc(n.tail) + '</p>';
+      html += '</div>';
+    });
+    box.innerHTML = html;
+    box.hidden = false;
+    ['scene', 'labels', 'legend', 'hint', 'progress', 'wxbar', 'hud'].forEach(function (id) {
+      var el = document.querySelector('.' + id) || $(id);
+      if (el) el.style.display = 'none';
+    });
+    var lg = document.querySelector('.legend'); if (lg) lg.style.display = 'none';
+  }
+
+  var ok = webglOK();
+  if (!ok) {
+    closeGuide(false);
+    renderFallback();
+  }
+
+  /* ---------- 对外接口 ---------- */
+  window.ISLAND = {
+    data: DATA,
+    order: ORDER,
+    meta: META,
+    lit: lit,
+    ok: ok,
+    openNode: openNode,
+    closePanel: closePanel,
+    updateProgress: updateProgress,
+    nextTarget: nextTarget,
+    say: say,
+    tagEls: tagEls,
+    focus: null,
+    intro: null,
+    registerTag: function (id, el) { if (id && el) tagEls[id] = el; }
+  };
+})();
+
+</script>
+<script>
+/* ============================================================
+   雪线牧场 · Snowline Pastures
+   三渲二微缩山地牧场小镇（单文件离线版）
+   ============================================================ */
+(function () {
+  'use strict';
+
+  /* ---------- WebGL 降级检测 ---------- */
+  function webglOK() {
+    try {
+      var c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl')));
+    } catch (e) { return false; }
+  }
+  if (!webglOK() || typeof THREE === 'undefined') {
+    document.getElementById('fallback').style.display = 'flex';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('ui').style.display = 'none';
+    return;
+  }
+
+  /* ---------- 基础工具 ---------- */
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function smoothstep(e0, e1, x) { var t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); }
+  var seed = 20261113;
+  function rnd() { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; }
+  function rndRange(a, b) { return a + (b - a) * rnd(); }
+  function hash2(x, y) { var s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123; return s - Math.floor(s); }
+  function noise2(x, y) {
+    var xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    var u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    var a = hash2(xi, yi), b = hash2(xi + 1, yi), c = hash2(xi, yi + 1), d = hash2(xi + 1, yi + 1);
+    return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
+  }
+  function fbm(x, y) {
+    var s = 0, a = 0.5, f = 1;
+    for (var i = 0; i < 4; i++) { s += a * noise2(x * f, y * f); a *= 0.5; f *= 2.13; }
+    return s;
+  }
+
+  /* ---------- 悬浮小岛尺度（地形与所有摆件共用） ---------- */
+  var Z_FRONT = 60, Z_BACK = -74;
+  var ISL_CX = 0, ISL_CZ = -6;          // 岛台圆心
+  var ISL_R = 68;                       // 岛台半径（岛缘会做 ±5% 不规则扰动）
+  var ISL_LIP = 0.16;                   // 草皮包边 / 崖口收口的归一化宽度
+  var ISL_SKIRT = 74;                   // 岛底倒锥岩体向下延伸的深度
+  var CLOUD_Y = -152;                    // 云海高度（压低，使岛底岩根完整悬空）
+
+  var STREAM_PTS = [];
+  (function () {
+    for (var i = 0; i <= 90; i++) {
+      var t = i / 90;
+      var z = -62 + t * 114;                        // 从北侧雪线流到南侧岛缘
+      var x = Math.sin(t * 4.2 + 0.6) * 6.6 + Math.sin(t * 1.6 + 1.1) * 3.4 + (t - 0.5) * 5.0;
+      STREAM_PTS.push(new THREE.Vector2(x, z));
+    }
+  })();
+
+  /* 岛缘不规则扰动：让岛台像手捏的低模，而不是一个几何正圆 */
+  function islWobble(a) {
+    return 1 + 0.052 * Math.sin(a * 3.0 + 0.7) + 0.030 * Math.sin(a * 5.0 - 1.9) + 0.017 * Math.sin(a * 8.0 + 2.4);
+  }
+  function islRim(x, z) {
+    var dx = x - ISL_CX, dz = z - ISL_CZ;
+    var a = Math.atan2(dz, dx);
+    return ISL_R * islWobble(a);
+  }
+  /* 0 = 岛内平地，1 = 已到崖口 */
+  function islEdgeT(x, z) {
+    var dx = x - ISL_CX, dz = z - ISL_CZ;
+    var r = Math.sqrt(dx * dx + dz * dz);
+    var R = islRim(x, z);
+    return clamp((r / R - (1 - ISL_LIP)) / ISL_LIP, 0, 1);
+  }
+  /* 把过靠边缘的摆件拉回岛内，避免掉出岛缘 */
+  function islClamp(x, z, k) {
+    var dx = x - ISL_CX, dz = z - ISL_CZ;
+    var r = Math.sqrt(dx * dx + dz * dz);
+    var lim = islRim(x, z) * (k || 0.82);
+    if (r <= lim) return [x, z];
+    var s = lim / (r || 1);
+    return [ISL_CX + dx * s, ISL_CZ + dz * s];
+  }
+
+  function streamDist(x, z) {
+    var best = 1e9;
+    for (var i = 0; i < STREAM_PTS.length; i++) {
+      var dx = x - STREAM_PTS[i].x, dz = z - STREAM_PTS[i].y;
+      var d = dx * dx + dz * dz;
+      if (d < best) best = d;
+    }
+    return Math.sqrt(best);
+  }
+
+  /* ---------- 地形高度场（圆形岛台：南侧草甸 → 北侧雪线山脊 → 岛缘崖口） ---------- */
+  function groundY(x, z) {
+    var dx = x - ISL_CX, dz = z - ISL_CZ;
+    var r = Math.sqrt(dx * dx + dz * dz);
+    var a = Math.atan2(dz, dx);
+    var R = ISL_R * islWobble(a);
+    var rn = r / R;
+
+    var u = clamp((Z_FRONT - z) / (Z_FRONT - Z_BACK), 0, 1);    // 0 南侧草甸 1 北侧雪线
+    var h = 20 * Math.pow(u, 2.05);                             // 由南向北缓慢抬升的牧场坡
+    var m = clamp((u - 0.58) / 0.42, 0, 1);                     // 北侧雪线山脊
+    h += 50 * Math.pow(m, 1.62) * (0.55 + 0.85 * fbm(x * 0.030 + 11.3, z * 0.030 - 4.1));
+    h += 2.4 * fbm(x * 0.055 + 3.7, z * 0.055 + 8.2);
+    h += 1.15 * Math.sin(x * 0.105) * Math.cos(z * 0.088);
+    var d = streamDist(x, z);
+    h -= 7.0 * Math.exp(-(d * d) / (2 * 6.0 * 6.0));            // 冰川融水切出的河谷
+    h += 1.6 * smoothstep(0.70, 0.95, rn) * (1 - smoothstep(0.95, 1.02, rn));  // 岛缘草皮包边的微微隆起
+
+    var eT = clamp((rn - (1 - ISL_LIP)) / ISL_LIP, 0, 1);
+    h -= 14 * Math.pow(eT, 1.9);                                // 临崖收口
+    return h;
+  }
+  function slopeAt(x, z) {
+    var e = 1.2;
+    var dx = groundY(x + e, z) - groundY(x - e, z);
+    var dz = groundY(x, z + e) - groundY(x, z - e);
+    return Math.sqrt(dx * dx + dz * dz) / (2 * e);
+  }
+
+  /* ---------- 渲染器 / 场景 / 相机 ---------- */
+  var container = document.getElementById('scene');
+  var renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if (THREE.SRGBColorSpace !== undefined && 'outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  container.appendChild(renderer.domElement);
+
+  var scene = new THREE.Scene();
+  var fogBaseColor = new THREE.Color(0xd6e5f0);
+  scene.fog = new THREE.Fog(fogBaseColor.getHex(), 255, 900);
+
+  var camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.6, 1600);
+
+  /* ---------- 天空穹顶（渐变 + 太阳辉光） ---------- */
+  var skyUniforms = {
+    uTop: { value: new THREE.Color(0x8fc4e8) },
+    uBottom: { value: new THREE.Color(0xf2e4cf) },
+    uSun: { value: new THREE.Vector3(0, 1, 0) },
+    uSunColor: { value: new THREE.Color(0xffe6b0) }
+  };
+  var sky = new THREE.Mesh(
+    new THREE.SphereGeometry(900, 32, 20),
+    new THREE.ShaderMaterial({
+      uniforms: skyUniforms,
+      side: THREE.BackSide,
+      depthWrite: false,
+      vertexShader: [
+        'varying vec3 vDir;',
+        'void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }'
+      ].join('\n'),
+      fragmentShader: [
+        'uniform vec3 uTop; uniform vec3 uBottom; uniform vec3 uSun; uniform vec3 uSunColor;',
+        'varying vec3 vDir;',
+        'void main(){',
+        '  float h = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0);',
+        '  vec3 col = mix(uBottom, uTop, pow(h, 0.82));',
+        '  float d = max(dot(normalize(vDir), normalize(uSun)), 0.0);',
+        '  col += uSunColor * pow(d, 160.0) * 1.25;',
+        '  col += uSunColor * pow(d, 7.0) * 0.16;',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+      ].join('\n')
+    })
+  );
+  sky.frustumCulled = false;
+  scene.add(sky);
+
+  /* ---------- 光照 ---------- */
+  var hemi = new THREE.HemisphereLight(0xe8f3ff, 0x55614e, 0.52);
+  scene.add(hemi);
+
+  var sun = new THREE.DirectionalLight(0xfff2dc, 2.2);
+  sun.castShadow = true;
+  sun.shadow.mapSize.width = 1536;
+  sun.shadow.mapSize.height = 1536;
+  sun.shadow.camera.left = -78;
+  sun.shadow.camera.right = 78;
+  sun.shadow.camera.top = 78;
+  sun.shadow.camera.bottom = -78;
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far = 320;
+  sun.shadow.bias = -0.0009;
+  sun.shadow.normalBias = 0.035;
+  scene.add(sun);
+  scene.add(sun.target);
+  sun.target.position.set(0, 10, -6);
+
+  var fillLight = new THREE.DirectionalLight(0xbcd6ff, 0.28);
+  fillLight.position.set(-60, 40, 60);
+  scene.add(fillLight);
+
+  /* ---------- 时间系统：清晨 → 正午 → 傍晚 ---------- */
+  var TOD = {
+    // time: 0=清晨 0.5=正午 1=傍晚
+    sunColor: [new THREE.Color(0xffd9b0), new THREE.Color(0xfff6e2), new THREE.Color(0xff9d4d)],
+    skyTop: [new THREE.Color(0x9ec7e6), new THREE.Color(0x74b4e8), new THREE.Color(0x6b6fa8)],
+    skyBottom: [new THREE.Color(0xf7e2c8), new THREE.Color(0xe9f2f8), new THREE.Color(0xf4a86a)],
+    fogColor: [new THREE.Color(0xe4ecf3), new THREE.Color(0xdfeaf4), new THREE.Color(0xe9c3a2)],
+    hemiSky: [new THREE.Color(0xd7e9ff), new THREE.Color(0xe7f4ff), new THREE.Color(0xb9b0c9)],
+    hemiGround: [new THREE.Color(0x6f7a58), new THREE.Color(0x5f6b52), new THREE.Color(0x4a4038)],
+    sunIntensity: [1.35, 1.95, 1.15]
+  };
+  var windowMats = [];   // 傍晚亮灯的窗户
+  var warmLights = [];   // 傍晚补光
+
+  function sampleStops(arr, t) {
+    if (t < 0.5) return arr[0].clone().lerp(arr[1], t / 0.5);
+    return arr[1].clone().lerp(arr[2], (t - 0.5) / 0.5);
+  }
+  function sampleNum(arr, t) {
+    if (t < 0.5) return lerp(arr[0], arr[1], t / 0.5);
+    return lerp(arr[1], arr[2], (t - 0.5) / 0.5);
+  }
+
+  var state = { time: 0.16, weather: 'clear', weatherMix: { rain: 0, snow: 0, fog: 0 } };
+
+  function applyTime() {
+    var t = state.time;
+    var ang = Math.PI * (0.12 + t * 0.76);            // 东 → 西
+    var elev = Math.sin(Math.PI * (0.16 + t * 0.68));
+    sun.position.set(Math.cos(ang) * 120, 26 + elev * 92, -58 + Math.sin(ang) * 32);
+    sun.color.copy(sampleStops(TOD.sunColor, t));
+    sun.intensity = sampleNum(TOD.sunIntensity, t);
+    hemi.color.copy(sampleStops(TOD.hemiSky, t));
+    hemi.groundColor.copy(sampleStops(TOD.hemiGround, t));
+    hemi.intensity = lerp(0.62, 0.5, t);
+    skyUniforms.uTop.value.copy(sampleStops(TOD.skyTop, t));
+    skyUniforms.uBottom.value.copy(sampleStops(TOD.skyBottom, t));
+    skyUniforms.uSunColor.value.copy(sampleStops(TOD.sunColor, t));
+    skyUniforms.uSun.value.copy(sun.position).normalize();
+
+    var fc = sampleStops(TOD.fogColor, t);
+    scene.fog.color.copy(fc);
+    renderer.setClearColor(fc, 1);
+
+    var lit = smoothstep(0.52, 0.86, t);
+    for (var i = 0; i < windowMats.length; i++) {
+      windowMats[i].emissiveIntensity = 0.15 + lit * 1.5;
+    }
+    for (var j = 0; j < warmLights.length; j++) {
+      warmLights[j].intensity = lit * 0.85;
+    }
+    renderer.toneMappingExposure = lerp(1.04, 1.0, t);
+  }
+
+  /* ---------- 相机轨道控制（自研，无外部依赖） ---------- */
+  var cam = { az: 0.15, el: 0.34, dist: 332, tAz: 0.15, tEl: 0.34, tDist: 332 };
+  var Z_MIN = 186, Z_MAX = 470;                       // 缩放范围：最近也保持不穿模、岛形完整
+  var camTarget = new THREE.Vector3(0, -11, -2);
+  var dragging = false, lastX = 0, lastY = 0, pointers = {}, pinchStart = 0, pinchDist0 = 0;
+
+  function updateCamera(dt) {
+    cam.az = lerp(cam.az, cam.tAz, Math.min(1, dt * 9));
+    cam.el = lerp(cam.el, cam.tEl, Math.min(1, dt * 9));
+    cam.dist = lerp(cam.dist, cam.tDist, Math.min(1, dt * 7));
+    var ce = Math.cos(cam.el), se = Math.sin(cam.el);
+    camera.position.set(
+      camTarget.x + Math.sin(cam.az) * ce * cam.dist,
+      camTarget.y + se * cam.dist,
+      camTarget.z + Math.cos(cam.az) * ce * cam.dist
+    );
+    camera.lookAt(camTarget);
+  }
+
+  var el = renderer.domElement;
+  el.addEventListener('pointerdown', function (e) {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    if (el.setPointerCapture) { try { el.setPointerCapture(e.pointerId); } catch (err) {} }
+  });
+  el.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    cam.tAz -= dx * 0.0052;
+    cam.tEl = clamp(cam.tEl + dy * 0.0038, 0.1, 1.32);
+  });
+  function endDrag(e) { dragging = false; if (e && e.pointerId !== undefined && el.releasePointerCapture) { try { el.releasePointerCapture(e.pointerId); } catch (err) {} } }
+  el.addEventListener('pointerup', endDrag);
+  el.addEventListener('pointercancel', endDrag);
+  el.addEventListener('pointerleave', endDrag);
+  el.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    cam.tDist = clamp(cam.tDist * (1 + (e.deltaY > 0 ? 1 : -1) * 0.09), Z_MIN, Z_MAX);
+  }, { passive: false });
+  el.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      pinchStart = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      pinchDist0 = cam.tDist;
+    }
+  }, { passive: true });
+  el.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && pinchStart > 0) {
+      var d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      cam.tDist = clamp(pinchDist0 * (pinchStart / Math.max(d, 1)), Z_MIN, Z_MAX);
+    }
+  }, { passive: true });
+  el.addEventListener('touchend', function () { pinchStart = 0; });
+
+  window.addEventListener('resize', function () {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  /* ---------- 共用材质与贴图工具 ---------- */
+  function radialTexture(inner, outer, size) {
+    var s = size || 128;
+    var cv = document.createElement('canvas'); cv.width = cv.height = s;
+    var ctx = cv.getContext('2d');
+    var g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    g.addColorStop(0, inner); g.addColorStop(0.55, inner); g.addColorStop(1, outer);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, s, s);
+    var tex = new THREE.CanvasTexture(cv);
+    tex.needsUpdate = true;
+    return tex;
+  }
+  var shadowTex = radialTexture('rgba(24,32,40,0.62)', 'rgba(24,32,40,0)', 128);
+  var cloudTex = radialTexture('rgba(255,255,255,0.95)', 'rgba(255,255,255,0)', 128);
+
+  var updaters = [];
+  function addUpdater(fn) { updaters.push(fn); }
+
+  var M = {
+    wood: new THREE.MeshLambertMaterial({ color: 0xa9793f }),
+    woodDark: new THREE.MeshLambertMaterial({ color: 0x7c5629 }),
+    woodLight: new THREE.MeshLambertMaterial({ color: 0xc79a5f }),
+    roofRed: new THREE.MeshLambertMaterial({ color: 0x8e3b32 }),
+    roofDark: new THREE.MeshLambertMaterial({ color: 0x5c2b28 }),
+    stone: new THREE.MeshLambertMaterial({ color: 0x9aa0a3 }),
+    stoneDark: new THREE.MeshLambertMaterial({ color: 0x767c80 }),
+    plaster: new THREE.MeshLambertMaterial({ color: 0xf1e6d4 }),
+    snow: new THREE.MeshLambertMaterial({ color: 0xf6f9ff }),
+    hay: new THREE.MeshLambertMaterial({ color: 0xd6b25c }),
+    iron: new THREE.MeshLambertMaterial({ color: 0x4b4f52 }),
+    cowBody: new THREE.MeshLambertMaterial({ color: 0xf2efe8 }),
+    cowSpot: new THREE.MeshLambertMaterial({ color: 0x3a3a3c }),
+    goat: new THREE.MeshLambertMaterial({ color: 0xd9cbb3 }),
+    dog: new THREE.MeshLambertMaterial({ color: 0x8a6a45 }),
+    leaf: new THREE.MeshLambertMaterial({ color: 0x2f6b4a }),
+    leafDark: new THREE.MeshLambertMaterial({ color: 0x255640 }),
+    trunk: new THREE.MeshLambertMaterial({ color: 0x5b4227 }),
+    rock: new THREE.MeshLambertMaterial({ color: 0x8c8f92 }),
+    waterBase: null
+  };
+
+  function box(w, h, d, mat) {
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.castShadow = true; m.receiveShadow = true;
+    return m;
+  }
+  function placeOnGround(obj, x, z, yOffset) {
+    obj.position.set(x, groundY(x, z) + (yOffset || 0), z);
+    return obj;
+  }
+
+
+  /* ============================================================
+     悬浮岛体：圆盘岛台 / 断崖与倒锥岩体 / 云海 / 远景雪峰
+     溪流与岛缘瀑布 / 植被与云影
+     ============================================================ */
+
+  function mergeParts(parts) {
+    var pos = [], nor = [], col = [];
+    var nm = new THREE.Matrix3();
+    var v = new THREE.Vector3(), n = new THREE.Vector3();
+    for (var pi = 0; pi < parts.length; pi++) {
+      var p = parts[pi];
+      var g = p.geo.index ? p.geo.toNonIndexed() : p.geo;
+      var pa = g.attributes.position, na = g.attributes.normal;
+      nm.getNormalMatrix(p.m);
+      var c = new THREE.Color(p.color);
+      for (var i = 0; i < pa.count; i++) {
+        v.fromBufferAttribute(pa, i).applyMatrix4(p.m);
+        n.fromBufferAttribute(na, i).applyMatrix3(nm).normalize();
+        pos.push(v.x, v.y, v.z);
+        nor.push(n.x, n.y, n.z);
+        col.push(c.r, c.g, c.b);
+      }
+      if (g !== p.geo) g.dispose();
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    return geo;
+  }
+  function mat4(px, py, pz, rx, ry, rz, s) {
+    var m = new THREE.Matrix4();
+    m.makeRotationFromEuler(new THREE.Euler(rx || 0, ry || 0, rz || 0));
+    var ss = (s === undefined ? 1 : s);
+    m.scale(new THREE.Vector3(ss, ss, ss));
+    m.setPosition(px, py, pz);
+    return m;
+  }
+
+  /* ---------- 岛台地形（极坐标圆盘，顶点色实现草甸 / 岩 / 雪的层次） ---------- */
+  var RING = 76, SECT = 148;
+  var cGrassA = new THREE.Color(0xa6bd60);
+  var cGrassB = new THREE.Color(0xd9d276);
+  var cRockA = new THREE.Color(0x93948e);
+  var cRockB = new THREE.Color(0x6b6c66);
+  var cSnowT = new THREE.Color(0xf5faff);
+  var cBank = new THREE.Color(0xc0aa87);
+  var cTurf = new THREE.Color(0x76944a);
+
+  function terrColor(out, x, z, h, sl) {
+    var n = fbm(x * 0.13 + 5.1, z * 0.13 - 2.3);
+    var snowMix = clamp(smoothstep(40, 62, h + n * 11 - sl * 5), 0, 1);
+    var rockMix = clamp(smoothstep(0.6, 1.35, sl) + smoothstep(22, 44, h) * 0.5, 0, 1);
+    out.copy(cGrassA).lerp(cGrassB, clamp(n * 1.3, 0, 1));
+    var rk = new THREE.Color().copy(cRockA).lerp(cRockB, n);
+    out.lerp(rk, rockMix * (1 - snowMix * 0.55));
+    out.lerp(cSnowT, snowMix);
+    var d = streamDist(x, z);
+    out.lerp(cBank, (1 - smoothstep(3.8, 8.2, d)) * 0.5 * (1 - snowMix));
+    var eT = islEdgeT(x, z);
+    out.lerp(cTurf, smoothstep(0.40, 0.92, eT) * 0.55);          // 岛缘草皮包边压深一档绿
+    out.lerp(cRockB, smoothstep(0.88, 1.0, eT) * 0.8);           // 崖口露出岩色
+    return out;
+  }
+
+  var terrainGeo = (function () {
+    var pos = [], col = [], idx = [];
+    var cx = ISL_CX, cz = ISL_CZ;
+    var tmpC = new THREE.Color();
+    /* 中心点 */
+    var h0 = groundY(cx, cz);
+    pos.push(cx, h0, cz);
+    terrColor(tmpC, cx, cz, h0, 0.02);
+    col.push(tmpC.r, tmpC.g, tmpC.b);
+    /* 环 1..RING */
+    for (var i = 1; i <= RING; i++) {
+      var t = i / RING;
+      for (var j = 0; j < SECT; j++) {
+        var a = (j / SECT) * Math.PI * 2;
+        var R = ISL_R * islWobble(a);
+        var r = t * R;
+        var x = cx + Math.cos(a) * r;
+        var z = cz + Math.sin(a) * r;
+        var h = groundY(x, z);
+        pos.push(x, h, z);
+        terrColor(tmpC, x, z, h, slopeAt(x, z));
+        col.push(tmpC.r, tmpC.g, tmpC.b);
+      }
+    }
+    var at = function (i, j) { return 1 + (i - 1) * SECT + (j % SECT); };
+    /* 中心扇面 */
+    for (var j0 = 0; j0 < SECT; j0++) {
+      idx.push(0, at(1, j0), at(1, j0 + 1));
+    }
+    /* 环间四边形 */
+    for (var ii = 1; ii < RING; ii++) {
+      for (var jj = 0; jj < SECT; jj++) {
+        var a0 = at(ii, jj), a1 = at(ii, jj + 1);
+        var b0 = at(ii + 1, jj), b1 = at(ii + 1, jj + 1);
+        idx.push(a0, b0, b1, a0, b1, a1);
+      }
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  })();
+
+  var terrain = new THREE.Mesh(terrainGeo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+  terrain.receiveShadow = true;
+  terrain.castShadow = true;
+  scene.add(terrain);
+
+  /* ---------- 断崖与倒锥岩体：从岛缘一路收成悬在云海上的岩根 ---------- */
+  var rimRing = [];      // 岛缘顶点（供瀑布、崖边草皮引用）
+  (function () {
+    for (var j = 0; j < SECT; j++) {
+      var a = (j / SECT) * Math.PI * 2;
+      var R = ISL_R * islWobble(a);
+      var x = ISL_CX + Math.cos(a) * R;
+      var z = ISL_CZ + Math.sin(a) * R;
+      rimRing.push({ a: a, x: x, z: z, y: groundY(x, z), R: R });
+    }
+
+    var LEVELS = 13;
+    var pos = [], col = [], idx = [];
+    var yTop = [], radTop = [];
+    var cDark = new THREE.Color(0x3d3a33);
+    var cMid = new THREE.Color(0x5e5850);
+    var cLight = new THREE.Color(0x938c7e);
+    var cMoss = new THREE.Color(0x6b8544);
+    var tmp = new THREE.Color();
+
+    /* 第 0 层 = 岛缘（草皮外扩出一圈，形成包边） */
+    for (var j = 0; j < SECT; j++) {
+      var r0 = rimRing[j];
+      yTop.push(r0.y);
+      radTop.push(r0.R);
+      var lipR = r0.R * 1.052;
+      pos.push(ISL_CX + Math.cos(r0.a) * lipR, r0.y - 1.5, ISL_CZ + Math.sin(r0.a) * lipR);
+      tmp.copy(cMoss).lerp(cMid, 0.18);
+      col.push(tmp.r, tmp.g, tmp.b);
+    }
+    /* 逐层收窄下落 */
+    for (var l = 1; l <= LEVELS; l++) {
+      var t = l / LEVELS;
+      for (var j2 = 0; j2 < SECT; j2++) {
+        var r0b = rimRing[j2];
+        var shrink = 1 - 0.855 * Math.pow(t, 0.72);
+        var rr = r0b.R * shrink;
+        var jag = (noise2(r0b.a * 2.6 + 3.2, t * 5.4) - 0.5) * 5.2 * (1 - t * 0.45);
+        var yy = r0b.y - ISL_SKIRT * Math.pow(t, 0.94) + jag;
+        var x2 = ISL_CX + Math.cos(r0b.a) * rr;
+        var z2 = ISL_CZ + Math.sin(r0b.a) * rr;
+        pos.push(x2, yy, z2);
+        var band = 0.5 + 0.5 * Math.sin(t * 16.0 + r0b.a * 2.2 + noise2(r0b.a * 4.0, t * 3.0) * 2.4);
+        tmp.copy(cDark).lerp(cLight, 0.12 + band * 0.78);
+        tmp.lerp(cMid, 0.22);
+        if (t < 0.13) tmp.lerp(cMoss, 0.85 - t * 5.6);           // 崖顶草皮往下压一截
+        tmp.multiplyScalar(1 - 0.34 * t);                        // 越往下越暗，形成体积感
+        col.push(tmp.r, tmp.g, tmp.b);
+      }
+    }
+    /* 环间面 */
+    var at2 = function (l, j) { return l * SECT + (j % SECT); };
+    for (var ll = 0; ll < LEVELS; ll++) {
+      for (var j3 = 0; j3 < SECT; j3++) {
+        var a0 = at2(ll, j3), a1 = at2(ll, j3 + 1);
+        var b0 = at2(ll + 1, j3), b1 = at2(ll + 1, j3 + 1);
+        idx.push(a0, b0, b1, a0, b1, a1);
+      }
+    }
+    /* 岩根尖端 */
+    var tipY = rimRing.reduce(function (s, p) { return s + p.y; }, 0) / SECT - ISL_SKIRT - 16;
+    var tipI = pos.length / 3;
+    pos.push(ISL_CX, tipY, ISL_CZ);
+    col.push(cDark.r * 0.82, cDark.g * 0.82, cDark.b * 0.82);
+    for (var j4 = 0; j4 < SECT; j4++) {
+      idx.push(at2(LEVELS, j4), tipI, at2(LEVELS, j4 + 1));
+    }
+
+    var g2 = new THREE.BufferGeometry();
+    g2.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g2.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g2.setIndex(idx);
+    g2.computeVertexNormals();
+    var skirt = new THREE.Mesh(g2, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    skirt.receiveShadow = true;
+    scene.add(skirt);
+
+    /* 岛底几块外挑的岩柱，破一下锥体的规整感 */
+    var shardGeo = new THREE.IcosahedronGeometry(1, 0);
+    var shardMat = new THREE.MeshLambertMaterial({ color: 0x6a655c, flatShading: true });
+    for (var s = 0; s < 7; s++) {
+      var aa = rndRange(0, Math.PI * 2);
+      var ss = rndRange(4, 11);
+      var m = new THREE.Mesh(shardGeo, shardMat);
+      m.position.set(ISL_CX + Math.cos(aa) * rndRange(9, 26), rndRange(-72, -22), ISL_CZ + Math.sin(aa) * rndRange(9, 26));
+      m.scale.set(ss, ss * rndRange(1.4, 2.6), ss);
+      m.rotation.set(rndRange(0, 3.1), rndRange(0, 6.2), rndRange(0, 3.1));
+      scene.add(m);
+    }
+  })();
+
+  /* ---------- 云海：岛体下方一层缓慢流动的云毯 + 体积云团 ---------- */
+  var seaUniforms = { uTime: { value: 0 }, uTop: { value: new THREE.Color(0xf4f9ff) }, uDeep: { value: new THREE.Color(0xb9cede) } };
+  (function () {
+    var geo = new THREE.PlaneGeometry(2600, 2600, 1, 1);
+    var mat = new THREE.ShaderMaterial({
+      uniforms: seaUniforms,
+      transparent: false,
+      depthWrite: true,
+      vertexShader: [
+        'varying vec2 vUv;',
+        'void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }'
+      ].join('\n'),
+      fragmentShader: [
+        'uniform float uTime; uniform vec3 uTop; uniform vec3 uDeep;',
+        'varying vec2 vUv;',
+        'float hash(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 45758.5453); }',
+        'float noise(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f);',
+        '  float a = hash(i), b = hash(i+vec2(1.0,0.0)), c = hash(i+vec2(0.0,1.0)), d = hash(i+vec2(1.0,1.0));',
+        '  return mix(mix(a,b,f.x), mix(c,d,f.x), f.y); }',
+        'void main(){',
+        '  vec2 p = vUv * 9.0 + vec2(uTime * 0.012, uTime * 0.02);',
+        '  float n = noise(p) * 0.55 + noise(p * 2.3 + 4.0) * 0.3 + noise(p * 5.1 - 2.0) * 0.15;',
+        '  float m = noise(p * 0.42 + vec2(13.0, 7.0));',
+        '  vec3 col = mix(uDeep, uTop, clamp(n * 0.75 + m * 0.45, 0.0, 1.0));',
+        '  col += pow(clamp(n, 0.0, 1.0), 5.0) * 0.18;',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+      ].join('\n')
+    });
+    var sea = new THREE.Mesh(geo, mat);
+    sea.rotation.x = -Math.PI / 2;
+    sea.position.set(0, CLOUD_Y, 0);
+    scene.add(sea);
+    addUpdater(function (dt, time) { seaUniforms.uTime.value = time; });
+
+    /* 云团：贴着云海面铺开，越靠近岛越密，把岛根半遮住 */
+    var seaGroup = new THREE.Group();
+    scene.add(seaGroup);
+    for (var i = 0; i < 54; i++) {
+      var a = rndRange(0, Math.PI * 2);
+      var rad = rndRange(40, 420);
+      var sp = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: cloudTex, transparent: true, opacity: rndRange(0.35, 0.78), depthWrite: false, color: 0xffffff
+      }));
+      var sc = rndRange(38, 110);
+      sp.scale.set(sc, sc * rndRange(0.34, 0.5), 1);
+      sp.position.set(Math.cos(a) * rad, CLOUD_Y + rndRange(1, 20), Math.sin(a) * rad);
+      sp.userData = { sp: rndRange(0.35, 1.5), a: a, rad: rad };
+      seaGroup.add(sp);
+    }
+    addUpdater(function (dt) {
+      for (var i = 0; i < seaGroup.children.length; i++) {
+        var c = seaGroup.children[i];
+        c.position.x += c.userData.sp * dt;
+        if (c.position.x > 460) c.position.x = -460;
+      }
+    });
+
+    /* 岛根周围的雾团，让岩体与云海过渡不生硬 */
+    for (var k = 0; k < 16; k++) {
+      var aa = (k / 16) * Math.PI * 2 + rndRange(-0.1, 0.1);
+      var rr = rndRange(16, 46);
+      var mist = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: cloudTex, transparent: true, opacity: rndRange(0.16, 0.34), depthWrite: false, color: 0xf2f8ff
+      }));
+      var ms = rndRange(34, 74);
+      mist.scale.set(ms, ms * 0.5, 1);
+      mist.position.set(ISL_CX + Math.cos(aa) * rr, rndRange(-108, -58), ISL_CZ + Math.sin(aa) * rr);
+      mist.userData.bob = rndRange(0, 6.28);
+      scene.add(mist);
+    }
+  })();
+
+  /* ---------- 远景雪峰（低模锥体 + 雪帽，冷蓝白，半隐在雾里） ---------- */
+  (function () {
+    var parts = [];
+    var MT_BASE = -46;                 // 远山基座（独立于云海高度）
+    var n = 18;
+    for (var i = 0; i < n; i++) {
+      var a = (i / n) * Math.PI * 2 + rndRange(-0.12, 0.12);
+      var rad = rndRange(330, 470);
+      var hh = rndRange(110, 205);
+      var rr = rndRange(52, 96);
+      var px = Math.cos(a) * rad, pz = Math.sin(a) * rad;
+      var ry = rndRange(0, 6.28);
+      var cold = new THREE.Color().setHSL(0.58, 0.14, rndRange(0.56, 0.68)).getHex();
+      parts.push({ geo: new THREE.ConeGeometry(rr, hh * 0.72, 6, 1), m: mat4(px, MT_BASE + hh * 0.36, pz, 0, ry, 0), color: cold });
+      parts.push({ geo: new THREE.ConeGeometry(rr * 0.46, hh * 0.44, 6, 1), m: mat4(px, MT_BASE + hh * 0.74, pz, 0, ry + 0.4, 0), color: 0xeaf3fb });
+      parts.push({ geo: new THREE.ConeGeometry(rr * 0.20, hh * 0.22, 5, 1), m: mat4(px, MT_BASE + hh * 0.96, pz, 0, ry + 0.9, 0), color: 0xf8fcff });
+    }
+    var geo = mergeParts(parts);
+    var far = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+    scene.add(far);
+  })();
+
+  /* ---------- 溪流 ribbon（沿路径生成）+ 动态水纹 ---------- */
+  var waterUniforms = {
+    uTime: { value: 0 },
+    uShallow: { value: new THREE.Color(0x9ed2dc) },
+    uDeep: { value: new THREE.Color(0x2c6d8a) },
+    uFoam: { value: 0.0 }
+  };
+  var waterMat = new THREE.ShaderMaterial({
+    uniforms: waterUniforms,
+    transparent: true,
+    depthWrite: false,
+    vertexShader: [
+      'varying vec2 vUv;',
+      'void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }'
+    ].join('\n'),
+    fragmentShader: [
+      'uniform float uTime; uniform vec3 uShallow; uniform vec3 uDeep; uniform float uFoam;',
+      'varying vec2 vUv;',
+      'void main(){',
+      '  float flow = sin(vUv.y * 26.0 - uTime * 3.4) * 0.5 + 0.5;',
+      '  float rip  = sin(vUv.y * 58.0 - uTime * 6.2 + sin(vUv.x * 9.0) * 2.4) * 0.5 + 0.5;',
+      '  vec3 col = mix(uDeep, uShallow, flow * 0.62 + rip * 0.38);',
+      '  float spark = smoothstep(0.88, 1.0, rip * flow);',
+      '  col += spark * 0.52;',
+      '  col = mix(col, vec3(0.97,0.99,1.0), uFoam * 0.85);',
+      '  float edge = smoothstep(0.0, 0.20, vUv.x) * smoothstep(1.0, 0.80, vUv.x);',
+      '  gl_FragColor = vec4(col, (0.74 + uFoam * 0.2) * (0.30 + 0.70 * edge));',
+      '}'
+    ].join('\n')
+  });
+
+  var streamCurve = new THREE.CatmullRomCurve3(STREAM_PTS.map(function (p) {
+    return new THREE.Vector3(p.x, 0, p.y);
+  }));
+
+  function buildStreamRibbon(fromT, toT, widthMul, yLift, mat) {
+    var steps = 170;
+    var posArr = [], uvArr = [], idx = [];
+    var p = new THREE.Vector3(), pPrev = new THREE.Vector3();
+    for (var i = 0; i <= steps; i++) {
+      var t = lerp(fromT, toT, i / steps);
+      streamCurve.getPoint(t, p);
+      streamCurve.getPoint(clamp(t - 0.004, 0, 1), pPrev);
+      var tx = p.x - pPrev.x, tz = p.z - pPrev.z;
+      var len = Math.hypot(tx, tz) || 1;
+      var nx = -tz / len, nz = tx / len;
+      var w = (1.9 + 1.2 * Math.abs(Math.sin(t * 9.0))) * widthMul;
+      var yC = groundY(p.x, p.z) + 0.42 + yLift;
+      var ex1 = p.x + nx * w, ez1 = p.z + nz * w;
+      var ex2 = p.x - nx * w, ez2 = p.z - nz * w;
+      var yE1 = Math.min(groundY(ex1, ez1) + 0.28, yC) - 0.16 + yLift;
+      var yE2 = Math.min(groundY(ex2, ez2) + 0.28, yC) - 0.16 + yLift;
+      posArr.push(ex1, yE1, ez1);
+      posArr.push(ex2, yE2, ez2);
+      posArr.push(p.x, yC + 0.05, p.z);
+      uvArr.push(0, t * 26);
+      uvArr.push(1, t * 26);
+      uvArr.push(0.5, t * 26);
+      if (i < steps) {
+        var a = i * 3, b = (i + 1) * 3;
+        idx.push(a, a + 1, b + 1, a, b + 1, b);
+        idx.push(a + 1, a + 2, b + 2, a + 1, b + 2, b + 1);
+        idx.push(a + 2, a, b, a + 2, b, b + 2);
+      }
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uvArr, 2));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    var mesh = new THREE.Mesh(g, mat);
+    mesh.renderOrder = 2;
+    scene.add(mesh);
+    return mesh;
+  }
+  buildStreamRibbon(0.0, 0.985, 1.0, 0, waterMat);
+
+  /* ---------- 岛缘瀑布：溪流到崖口直接跌入云海 ---------- */
+  var fallMats = [];
+  (function () {
+    var fallShader = function (op) {
+      var u = { uTime: { value: 0 }, uOpacity: { value: op } };
+      var mat = new THREE.ShaderMaterial({
+        uniforms: u,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        vertexShader: [
+          'varying vec2 vUv;',
+          'void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }'
+        ].join('\n'),
+        fragmentShader: [
+          'uniform float uTime; uniform float uOpacity;',
+          'varying vec2 vUv;',
+          'void main(){',
+          '  float s = sin(vUv.y * 46.0 + uTime * 7.0) * 0.5 + 0.5;',
+          '  float s2 = sin(vUv.y * 94.0 + uTime * 12.0 + vUv.x * 5.0) * 0.5 + 0.5;',
+          '  float streak = mix(s, s2, 0.45);',
+          '  vec3 col = mix(vec3(0.72,0.86,0.94), vec3(1.0,1.0,1.0), streak);',
+          '  float edge = smoothstep(0.0,0.12,vUv.x) * smoothstep(1.0,0.88,vUv.x);',
+          '  float fade = smoothstep(0.0, 0.10, vUv.y) * (1.0 - smoothstep(0.72, 1.0, vUv.y));',
+          '  gl_FragColor = vec4(col, uOpacity * (0.35 + 0.65 * streak) * edge * fade);',
+          '}'
+        ].join('\n')
+      });
+      fallMats.push(u);
+      return mat;
+    };
+
+    function makeFall(a, widthMul, dropY) {
+      var R = ISL_R * islWobble(a);
+      var ax = Math.cos(a), az = Math.sin(a);
+      var x0 = ISL_CX + ax * (R - 1.0), z0 = ISL_CZ + az * (R - 1.0);
+      var y0 = groundY(ISL_CX + ax * R, ISL_CZ + az * R);
+      var steps = 30;
+      var pos = [], uv = [], idx = [];
+      var prevL = null, prevR = null;
+      for (var i = 0; i <= steps; i++) {
+        var t = i / steps;
+        var out = 1.0 * t + 3.4 * t * t;
+        var y = y0 - dropY * Math.pow(t, 0.86);
+        var w = (1.5 + 1.9 * t) * widthMul;
+        var cx = x0 + ax * out, cz = z0 + az * out;
+        var nx = -az, nz = ax;
+        var yTop = y;
+        pos.push(cx + nx * w, yTop, cz + nz * w);
+        pos.push(cx - nx * w, yTop, cz - nz * w);
+        uv.push(0, t);
+        uv.push(1, t);
+        if (i > 0) {
+          var a0 = (i - 1) * 2, b0 = i * 2;
+          idx.push(a0, b0, b0 + 1, a0, b0 + 1, a0 + 1);
+        }
+      }
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      var mesh = new THREE.Mesh(g, fallShader(0.92));
+      mesh.renderOrder = 3;
+      scene.add(mesh);
+
+      /* 水落云海处的雾气与水花 */
+      var baseY = y0 - dropY;
+      for (var k = 0; k < 6; k++) {
+        var sp = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: cloudTex, transparent: true, opacity: rndRange(0.25, 0.5), depthWrite: false, color: 0xffffff
+        }));
+        var sc = rndRange(10, 22) * (0.7 + widthMul * 0.5);
+        sp.scale.set(sc, sc * 0.62, 1);
+        sp.position.set(x0 + ax * rndRange(1, 7) + rndRange(-4, 4), baseY + rndRange(-2, 6), z0 + az * rndRange(1, 7) + rndRange(-4, 4));
+        scene.add(sp);
+      }
+      var count = 90;
+      var pg = new THREE.BufferGeometry();
+      var pp = new Float32Array(count * 3);
+      var vv = [];
+      for (var q = 0; q < count; q++) {
+        pp[q * 3] = x0 + ax * rndRange(0, 6) + rndRange(-2.6, 2.6);
+        pp[q * 3 + 1] = y0 - rndRange(0, dropY * 0.55);
+        pp[q * 3 + 2] = z0 + az * rndRange(0, 6) + rndRange(-2.6, 2.6);
+        vv.push({ vy: -rndRange(8, 16), vx: rndRange(-0.7, 0.7) });
+      }
+      pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+      var drop = new THREE.Points(pg, new THREE.PointsMaterial({
+        color: 0xffffff, size: 0.55, transparent: true, opacity: 0.75, depthWrite: false,
+        map: cloudTex, blending: THREE.AdditiveBlending
+      }));
+      scene.add(drop);
+      addUpdater(function (dt) {
+        var arr = pg.attributes.position.array;
+        for (var i2 = 0; i2 < count; i2++) {
+          arr[i2 * 3 + 1] += vv[i2].vy * dt;
+          arr[i2 * 3] += vv[i2].vx * dt;
+          if (arr[i2 * 3 + 1] < baseY - 2) {
+            arr[i2 * 3 + 1] = y0 - rndRange(0, 3);
+            arr[i2 * 3] = x0 + ax * rndRange(0, 4) + rndRange(-2.6, 2.6);
+            arr[i2 * 3 + 2] = z0 + az * rndRange(0, 4) + rndRange(-2.6, 2.6);
+          }
+        }
+        pg.attributes.position.needsUpdate = true;
+      });
+    }
+
+    /* 主瀑布：溪流出口方向 */
+    var endP = streamCurve.getPoint(1.0);
+    var mainA = Math.atan2(endP.z - ISL_CZ, endP.x - ISL_CX);
+    makeFall(mainA, 1.0, 116 - (groundY(ISL_CX + Math.cos(mainA) * ISL_R, ISL_CZ + Math.sin(mainA) * ISL_R)) * 0.0);
+    /* 次瀑布：西侧较窄的一道雪水 */
+    makeFall(2.62, 0.55, 86);
+  })();
+
+  addUpdater(function (dt, time) {
+    waterUniforms.uTime.value = time;
+    for (var i = 0; i < fallMats.length; i++) fallMats[i].uTime.value = time;
+  });
+
+  /* ---------- 岩石与碎石坡 ---------- */
+  (function () {
+    var rockGeo = new THREE.IcosahedronGeometry(1, 0);
+    var count = 78;
+    var mesh = new THREE.InstancedMesh(rockGeo, new THREE.MeshLambertMaterial({ color: 0x8d9194, flatShading: true }), count);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    var m = new THREE.Matrix4(), col = new THREE.Color();
+    var placed = 0, guard = 0;
+    while (placed < count && guard < 4000) {
+      guard++;
+      var x = rndRange(-ISL_R, ISL_R), z = ISL_CZ + rndRange(-ISL_R, ISL_R);
+      if (islEdgeT(x, z) > 0.35) continue;
+      if (streamDist(x, z) < 3.0) continue;
+      if (Math.abs(x) < 14 && z > -28 && z < 26) continue;
+      var s = rndRange(0.45, 1.9) * (1 + smoothstep(18, 40, groundY(x, z)) * 1.1);
+      m.copy(mat4(x, groundY(x, z) + s * 0.35, z, rndRange(0, 3.14), rndRange(0, 6.28), rndRange(0, 3.14), s));
+      mesh.setMatrixAt(placed, m);
+      col.setHSL(0.09, 0.03, rndRange(0.5, 0.66));
+      mesh.setColorAt(placed, col);
+      placed++;
+    }
+    mesh.count = placed;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
+  })();
+
+  /* ---------- 云杉林（合并几何 + InstancedMesh） ---------- */
+  var treeGeo = (function () {
+    var parts = [];
+    parts.push({ geo: new THREE.CylinderGeometry(0.22, 0.32, 1.9, 6), m: mat4(0, 0.95, 0), color: 0x5b4227 });
+    parts.push({ geo: new THREE.ConeGeometry(1.85, 2.7, 7), m: mat4(0, 2.4, 0), color: 0x255640 });
+    parts.push({ geo: new THREE.ConeGeometry(1.42, 2.3, 7), m: mat4(0, 3.55, 0), color: 0x2f6b4a });
+    parts.push({ geo: new THREE.ConeGeometry(1.0, 1.9, 7), m: mat4(0, 4.6, 0), color: 0x3c7f57 });
+    parts.push({ geo: new THREE.ConeGeometry(0.6, 1.05, 7), m: mat4(0, 5.3, 0), color: 0xeef6ff });
+    return mergeParts(parts);
+  })();
+
+  (function () {
+    var count = 84;
+    var mesh = new THREE.InstancedMesh(treeGeo, new THREE.MeshLambertMaterial({ vertexColors: true }), count);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    var m = new THREE.Matrix4();
+    var placed = 0, guard = 0;
+    while (placed < count && guard < 6000) {
+      guard++;
+      var x = rndRange(-ISL_R, ISL_R), z = ISL_CZ + rndRange(-ISL_R, ISL_R);
+      if (islEdgeT(x, z) > 0.28) continue;
+      var h = groundY(x, z);
+      if (h > 46) continue;
+      if (streamDist(x, z) < 5) continue;
+      if (Math.abs(x) < 30 && z > -38 && z < 46) continue;
+      var onSlope = slopeAt(x, z) > 0.26 || h > 20;
+      if (!(onSlope || rnd() < 0.20)) continue;
+      var s = rndRange(0.85, 1.6);
+      m.copy(mat4(x, h - 0.15, z, 0, rndRange(0, 6.28), 0, s));
+      mesh.setMatrixAt(placed, m);
+      placed++;
+    }
+    mesh.count = placed;
+    mesh.instanceMatrix.needsUpdate = true;
+    scene.add(mesh);
+  })();
+
+  /* ---------- 野花 ---------- */
+  (function () {
+    var petal = new THREE.PlaneGeometry(0.5, 0.5);
+    var parts = [];
+    parts.push({ geo: petal, m: mat4(0, 0, 0, 0, 0, 0), color: 0xffffff });
+    parts.push({ geo: petal, m: mat4(0, 0, 0, 0, Math.PI / 2, 0), color: 0xffffff });
+    var flowerGeo = mergeParts(parts);
+    var count = 620;
+    var mesh = new THREE.InstancedMesh(flowerGeo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }), count);
+    var m = new THREE.Matrix4(), col = new THREE.Color();
+    var palette = [0xfff3d6, 0xffd166, 0xf6a6c1, 0xb9d4ff, 0xffffff, 0xff8f6b];
+    var placed = 0, guard = 0;
+    while (placed < count && guard < 8000) {
+      guard++;
+      var x = rndRange(-ISL_R, ISL_R), z = ISL_CZ + rndRange(-ISL_R, ISL_R);
+      if (islEdgeT(x, z) > 0.15) continue;
+      var h = groundY(x, z);
+      if (h > 22) continue;
+      if (streamDist(x, z) < 3.8) continue;
+      var s = rndRange(0.9, 2.0);
+      m.copy(mat4(x, h + 0.3 * s, z, 0, rndRange(0, 6.28), 0, s));
+      mesh.setMatrixAt(placed, m);
+      col.set(palette[Math.floor(rnd() * palette.length)]);
+      mesh.setColorAt(placed, col);
+      placed++;
+    }
+    mesh.count = placed;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
+  })();
+
+  /* ---------- 草浪（草簇实例 + 逐帧风摆，含岛缘一圈草皮包边） ---------- */
+  (function () {
+    var parts = [];
+    for (var b = 0; b < 6; b++) {
+      var w = 0.13, hgt = rndRange(0.7, 1.35);
+      var g = new THREE.PlaneGeometry(w, hgt);
+      parts.push({
+        geo: g,
+        m: mat4(rndRange(-0.16, 0.16), hgt * 0.5, rndRange(-0.16, 0.16), 0, b * 0.52, rndRange(-0.16, 0.16)),
+        color: b % 2 ? 0x86a845 : 0xa8bf58
+      });
+    }
+    var bladeGeo = mergeParts(parts);
+    var count = 900;
+    var bladeMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    var mesh = new THREE.InstancedMesh(bladeGeo, bladeMat, count);
+    var data = [];
+    var placed = 0, guard = 0;
+    while (placed < count && guard < 12000) {
+      guard++;
+      var x = rndRange(-ISL_R, ISL_R), z = ISL_CZ + rndRange(-ISL_R, ISL_R);
+      var eT = islEdgeT(x, z);
+      if (eT > 0.62) continue;
+      var h = groundY(x, z);
+      if (h > 26) continue;
+      if (streamDist(x, z) < 4.0) continue;
+      /* 岛缘一带刻意加密，做出草皮包边 */
+      if (eT < 0.35 && rnd() > 0.62) continue;
+      data.push({ x: x, y: h - 0.05, z: z, s: rndRange(0.8, 2.0), ph: rndRange(0, 6.28) });
+      placed++;
+    }
+    mesh.count = data.length;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    var m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), sc = new THREE.Vector3();
+    var frame = 0;
+    addUpdater(function (dt, time) {
+      frame++;
+      if (frame % 2) return;
+      for (var i = 0; i < data.length; i++) {
+        var d = data[i];
+        var sway = Math.sin(time * 1.55 + d.ph + d.x * 0.16) * 0.11 + Math.sin(time * 3.1 + d.z * 0.2) * 0.035;
+        e.set(sway * 0.7, d.ph, sway);
+        q.setFromEuler(e);
+        v.set(d.x, d.y, d.z);
+        sc.set(d.s, d.s, d.s);
+        m.compose(v, q, sc);
+        mesh.setMatrixAt(i, m);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    });
+  })();
+
+  /* ---------- 空中飘云与掠岛云影 ---------- */
+  var cloudGroup = new THREE.Group();
+  scene.add(cloudGroup);
+  for (var ci = 0; ci < 13; ci++) {
+    var sp = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: cloudTex, transparent: true, opacity: 0.5, depthWrite: false, color: 0xffffff
+    }));
+    var cs0 = rndRange(24, 56);
+    sp.scale.set(cs0, cs0 * 0.5, 1);
+    sp.position.set(rndRange(-160, 160), rndRange(70, 112), rndRange(-130, 50));
+    sp.userData.speed = rndRange(0.5, 1.4);
+    cloudGroup.add(sp);
+  }
+  addUpdater(function (dt) {
+    for (var i = 0; i < cloudGroup.children.length; i++) {
+      var c = cloudGroup.children[i];
+      c.position.x += c.userData.speed * dt;
+      if (c.position.x > 175) c.position.x = -175;
+    }
+  });
+
+  var cloudShadowGeo = new THREE.PlaneGeometry(58, 58, 16, 16);
+  cloudShadowGeo.rotateX(-Math.PI / 2);
+  var cloudShadowTex = radialTexture('rgba(20,28,36,0.34)', 'rgba(20,28,36,0)', 128);
+  var cloudShadows = [];
+  for (var si = 0; si < 3; si++) {
+    var csm = new THREE.Mesh(cloudShadowGeo, new THREE.MeshBasicMaterial({
+      map: cloudShadowTex, transparent: true, opacity: 0.45, depthWrite: false, color: 0x2a3140
+    }));
+    csm.position.set(rndRange(-34, 34), 0, ISL_CZ + rndRange(-30, 30));
+    csm.renderOrder = 1;
+    csm.userData = { speed: rndRange(1.0, 2.0) };
+    scene.add(csm);
+    cloudShadows.push(csm);
+  }
+  function updateCloudShadows() {
+    for (var i = 0; i < cloudShadows.length; i++) {
+      var cs = cloudShadows[i];
+      var pos = cs.geometry.attributes.position;
+      var cx = cs.position.x, cz = cs.position.z;
+      for (var j = 0; j < pos.count; j++) {
+        var wx = cx + pos.getX(j), wz = cz + pos.getZ(j);
+        pos.setY(j, groundY(wx, wz) + 0.6);
+      }
+      pos.needsUpdate = true;
+    }
+  }
+  updateCloudShadows();
+  var csFrame = 0;
+  addUpdater(function (dt) {
+    csFrame++;
+    for (var i = 0; i < cloudShadows.length; i++) {
+      var cs = cloudShadows[i];
+      cs.position.x += cs.userData.speed * dt;
+      if (cs.position.x > 66) cs.position.x = -66;
+    }
+    if (csFrame % 3 === 0) updateCloudShadows();
+  });
+
+
+  /* ============================================================
+     小镇建筑 / 广场 / 缆车 / 桥梁 / 栅栏 / 牲畜 / 炊烟
+     ============================================================ */
+
+  var windowMat = new THREE.MeshLambertMaterial({ color: 0x9fc4d8, emissive: 0xffc073, emissiveIntensity: 0.15 });
+  windowMats.push(windowMat);
+
+  function gableRoof(w, d, hgt, mat) {
+    var r = w / 1.732;
+    var geo = new THREE.CylinderGeometry(r, r, d, 3, 1, false);
+    geo.rotateX(Math.PI / 2);
+    geo.rotateZ(Math.PI);
+    var sc = hgt / (1.5 * r);
+    geo.scale(1, sc, 1);
+    geo.translate(0, hgt / 3, 0);
+    geo.computeVertexNormals();
+    var m = new THREE.Mesh(geo, mat);
+    m.castShadow = true; m.receiveShadow = true;
+    return m;
+  }
+
+  var smokeEmitters = [];
+  function addSmoke(x, y, z, scale) {
+    smokeEmitters.push({ x: x, y: y, z: z, s: scale || 1 });
+  }
+
+  /* ---------- 木屋 ---------- */
+  function cabin(x, z, opts) {
+    opts = opts || {};
+    var w = opts.w || 4.6, d = opts.d || 4.0, h = opts.h || 2.7;
+    var rot = opts.rot || 0;
+    var g = new THREE.Group();
+    var bodyMat = opts.bodyMat || M.wood;
+    var body = box(w, h, d, bodyMat);
+    body.position.y = h / 2;
+    g.add(body);
+    var base = box(w + 0.3, 0.5, d + 0.3, M.stoneDark);
+    base.position.y = 0.2;
+    g.add(base);
+    var roof = gableRoof(w + 0.9, d + 0.7, 1.7, opts.roofMat || M.roofRed);
+    roof.position.y = h;
+    roof.rotation.y = Math.PI / 2;
+    g.add(roof);
+    if (opts.balcony !== false) {
+      var bal = box(w + 0.5, 0.16, 1.1, M.woodLight);
+      bal.position.set(0, h * 0.62, d / 2 + 0.45);
+      g.add(bal);
+      var rail = box(w + 0.5, 0.1, 0.1, M.woodDark);
+      rail.position.set(0, h * 0.62 + 0.55, d / 2 + 0.98);
+      g.add(rail);
+      for (var i = 0; i < 5; i++) {
+        var post = box(0.08, 0.55, 0.08, M.woodDark);
+        post.position.set(-w / 2 + 0.3 + i * (w - 0.6) / 4, h * 0.62 + 0.28, d / 2 + 0.98);
+        g.add(post);
+      }
+      var planter = box(w * 0.7, 0.28, 0.34, M.woodDark);
+      planter.position.set(0, h * 0.62 + 0.2, d / 2 + 0.92);
+      g.add(planter);
+      var bloomGeo = new THREE.IcosahedronGeometry(0.17, 0);
+      var bloomMat = new THREE.MeshLambertMaterial({ color: 0xf2778f });
+      var bloomMat2 = new THREE.MeshLambertMaterial({ color: 0xffd166 });
+      for (var b = 0; b < 8; b++) {
+        var bl = new THREE.Mesh(bloomGeo, b % 2 ? bloomMat : bloomMat2);
+        bl.position.set(-w * 0.32 + b * (w * 0.64 / 7), h * 0.62 + 0.4, d / 2 + 0.92 + rndRange(-0.1, 0.1));
+        g.add(bl);
+      }
+    }
+    var door = box(0.95, 1.7, 0.12, M.woodDark);
+    door.position.set(opts.doorX || 0, 0.85, d / 2 + 0.03);
+    g.add(door);
+    var winGeo = new THREE.BoxGeometry(0.8, 0.8, 0.1);
+    var positions = [[-w / 2 + 1.0, h * 0.78, d / 2 + 0.02], [w / 2 - 1.0, h * 0.78, d / 2 + 0.02], [0, h * 0.35, d / 2 + 0.02]];
+    for (var p = 0; p < positions.length; p++) {
+      var win = new THREE.Mesh(winGeo, windowMat);
+      win.position.set(positions[p][0], positions[p][1], positions[p][2]);
+      g.add(win);
+      var frame = box(0.96, 0.96, 0.06, M.woodLight);
+      frame.position.set(positions[p][0], positions[p][1], positions[p][2] - 0.05);
+      g.add(frame);
+    }
+    if (opts.chimney !== false) {
+      var ch = box(0.5, 1.5, 0.5, M.stone);
+      ch.position.set(w * 0.26, h + 0.75, -d * 0.16);
+      g.add(ch);
+      addSmoke(x + w * 0.26, groundY(x, z) + h + 1.7, z - d * 0.16, 1);
+    }
+    g.position.set(x, groundY(x, z), z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 钟楼教堂 ---------- */
+  function church(x, z, rot) {
+    var g = new THREE.Group();
+    var nave = box(7.4, 5.0, 5.4, M.plaster);
+    nave.position.y = 2.5;
+    g.add(nave);
+    var roof = gableRoof(8.4, 6.0, 2.6, M.roofDark);
+    roof.position.y = 5.0;
+    roof.rotation.y = Math.PI / 2;
+    g.add(roof);
+    var tower = box(3.0, 9.2, 3.0, M.plaster);
+    tower.position.set(-4.6, 4.6, 0);
+    g.add(tower);
+    var spire = new THREE.Mesh(new THREE.ConeGeometry(2.5, 4.4, 4), M.roofDark);
+    spire.position.set(-4.6, 11.4, 0);
+    spire.rotation.y = Math.PI / 4;
+    spire.castShadow = true;
+    g.add(spire);
+    var bellOpen = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.7, 1.5), new THREE.MeshLambertMaterial({ color: 0x2f3336 }));
+    bellOpen.position.set(-4.6, 8.2, 0);
+    g.add(bellOpen);
+    var bell = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.6, 0.75, 8), new THREE.MeshLambertMaterial({ color: 0xb08a3e }));
+    bell.position.set(-4.6, 8.2, 0);
+    g.add(bell);
+    var crossV = box(0.14, 1.0, 0.14, M.iron);
+    crossV.position.set(-4.6, 14.2, 0);
+    g.add(crossV);
+    var crossH = box(0.62, 0.14, 0.14, M.iron);
+    crossH.position.set(-4.6, 14.42, 0);
+    g.add(crossH);
+    var winGeo = new THREE.BoxGeometry(0.7, 1.7, 0.1);
+    for (var i = 0; i < 3; i++) {
+      var w1 = new THREE.Mesh(winGeo, windowMat);
+      w1.position.set(-1.6 + i * 2.4, 2.9, 2.74);
+      g.add(w1);
+    }
+    var door = box(1.5, 2.6, 0.14, M.woodDark);
+    door.position.set(-4.6, 1.3, 1.55);
+    g.add(door);
+    var step = box(2.6, 0.35, 1.2, M.stone);
+    step.position.set(-4.6, 0.16, 2.1);
+    g.add(step);
+    g.position.set(x, groundY(x, z), z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 奶酪工坊 ---------- */
+  function cheeseWorkshop(x, z, rot) {
+    var g = new THREE.Group();
+    var body = box(5.2, 3.2, 4.2, M.plaster);
+    body.position.y = 1.6;
+    g.add(body);
+    var wainscot = box(5.3, 0.9, 4.3, M.wood);
+    wainscot.position.y = 0.5;
+    g.add(wainscot);
+    var roof = gableRoof(6.0, 4.9, 1.9, M.roofRed);
+    roof.position.y = 3.2;
+    roof.rotation.y = Math.PI / 2;
+    g.add(roof);
+    var sign = box(2.2, 0.66, 0.12, M.woodDark);
+    sign.position.set(0, 2.55, 2.16);
+    g.add(sign);
+    var cheeseMat = new THREE.MeshLambertMaterial({ color: 0xf0c04a });
+    var cheeseMat2 = new THREE.MeshLambertMaterial({ color: 0xe0a534 });
+    for (var i = 0; i < 5; i++) {
+      var wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.34, 14), i % 2 ? cheeseMat : cheeseMat2);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(-1.6 + i * 0.75, 0.5, 2.6);
+      wheel.castShadow = true;
+      g.add(wheel);
+    }
+    var shelf = box(3.4, 0.14, 0.6, M.woodLight);
+    shelf.position.set(0, 1.35, 2.3);
+    g.add(shelf);
+    for (var j = 0; j < 4; j++) {
+      var cw = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.24, 12), cheeseMat);
+      cw.rotation.z = Math.PI / 2;
+      cw.position.set(-1.2 + j * 0.8, 1.6, 2.3);
+      g.add(cw);
+    }
+    var win = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.9, 0.1), windowMat);
+    win.position.set(1.7, 2.0, 2.14);
+    g.add(win);
+    var ch = box(0.5, 1.2, 0.5, M.stone);
+    ch.position.set(-1.9, 3.6, -1.0);
+    g.add(ch);
+    addSmoke(x - 1.9, groundY(x, z) + 4.3, z - 1.0, 0.85);
+    g.position.set(x, groundY(x, z), z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 牧人小屋 ---------- */
+  function herdsmanHut(x, z, rot) {
+    var g = new THREE.Group();
+    var body = box(3.4, 2.2, 3.0, M.woodDark);
+    body.position.y = 1.1;
+    g.add(body);
+    var roof = gableRoof(4.1, 3.6, 1.35, M.roofRed);
+    roof.position.y = 2.2;
+    roof.rotation.y = Math.PI / 2;
+    g.add(roof);
+    var door = box(0.8, 1.4, 0.1, M.wood);
+    door.position.set(0, 0.7, 1.53);
+    g.add(door);
+    var win = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.1), windowMat);
+    win.position.set(1.0, 1.45, 1.52);
+    g.add(win);
+    for (var i = 0; i < 7; i++) {
+      var log = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.1, 6), M.woodLight);
+      log.rotation.z = Math.PI / 2;
+      log.position.set(-1.5, 0.2 + (i % 2) * 0.28, 1.7 + Math.floor(i / 2) * 0.32);
+      log.castShadow = true;
+      g.add(log);
+    }
+    g.position.set(x, groundY(x, z), z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 干草棚 ---------- */
+  function hayBarn(x, z, rot) {
+    var g = new THREE.Group();
+    var body = box(6.2, 3.4, 4.6, M.wood);
+    body.position.y = 1.7;
+    g.add(body);
+    var roof = gableRoof(7.0, 5.3, 2.0, M.roofDark);
+    roof.position.y = 3.4;
+    roof.rotation.y = Math.PI / 2;
+    g.add(roof);
+    var open = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.4, 0.2), new THREE.MeshLambertMaterial({ color: 0x2b2119 }));
+    open.position.set(0, 1.3, 2.28);
+    g.add(open);
+    for (var i = 0; i < 9; i++) {
+      var hay = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.5, 0.55), M.hay);
+      hay.position.set(-1.35 + (i % 3) * 0.9, 0.55 + Math.floor(i / 3) * 0.52, 2.15);
+      hay.rotation.z = rndRange(-0.08, 0.08);
+      hay.castShadow = true;
+      g.add(hay);
+    }
+    for (var j = 0; j < 3; j++) {
+      var roll = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 1.3, 14), M.hay);
+      roll.rotation.z = Math.PI / 2;
+      roll.position.set(4.0, 0.85, 1.6 - j * 2.1);
+      roll.rotation.y = rndRange(-0.3, 0.3);
+      roll.castShadow = true; roll.receiveShadow = true;
+      g.add(roll);
+    }
+    g.position.set(x, groundY(x, z), z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 石板广场 / 水槽喷泉 ---------- */
+  var fountainPos = new THREE.Vector3(-4, 0, 6);
+  function plaza(cx, cz, radius) {
+    var g = new THREE.Group();
+    var tiles = new THREE.Group();
+    var tileGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.16, 8);
+    var tileMat = new THREE.MeshLambertMaterial({ color: 0xa8adb0 });
+    var tileMat2 = new THREE.MeshLambertMaterial({ color: 0x919799 });
+    var count = 0;
+    for (var r = 0; r < radius; r += 1.85) {
+      var ringCount = Math.max(1, Math.round(r * 2));
+      for (var a = 0; a < ringCount; a++) {
+        var ang = (a / ringCount) * Math.PI * 2 + r * 0.7;
+        var px = cx + Math.cos(ang) * r, pz = cz + Math.sin(ang) * r;
+        if (streamDist(px, pz) < 4.5) continue;
+        var t = new THREE.Mesh(tileGeo, count % 2 ? tileMat : tileMat2);
+        t.position.set(px, groundY(px, pz) + 0.06, pz);
+        t.rotation.y = ang;
+        t.receiveShadow = true;
+        tiles.add(t);
+        count++;
+      }
+    }
+    g.add(tiles);
+    var fy = groundY(fountainPos.x, fountainPos.z);
+    var base = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.2, 0.55, 12), M.stone);
+    base.position.set(fountainPos.x, fy + 0.3, fountainPos.z);
+    base.castShadow = true; base.receiveShadow = true;
+    g.add(base);
+    var waterPool = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.75, 0.1, 12),
+      new THREE.MeshLambertMaterial({ color: 0x7fc4dd, emissive: 0x123a4a, emissiveIntensity: 0.25, transparent: true, opacity: 0.92 }));
+    waterPool.position.set(fountainPos.x, fy + 0.63, fountainPos.z);
+    g.add(waterPool);
+    var column = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.32, 1.5, 8), M.stoneDark);
+    column.position.set(fountainPos.x, fy + 1.3, fountainPos.z);
+    column.castShadow = true;
+    g.add(column);
+    var bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.5, 0.26, 12), M.stone);
+    bowl.position.set(fountainPos.x, fy + 2.05, fountainPos.z);
+    bowl.castShadow = true;
+    g.add(bowl);
+    var twx = fountainPos.x + 3.4, twz = fountainPos.z + 1.4;
+    var trough = box(2.6, 0.5, 0.8, M.stoneDark);
+    trough.position.set(twx, groundY(twx, twz) + 0.25, twz);
+    g.add(trough);
+    var troughWater = box(2.4, 0.08, 0.62, new THREE.MeshLambertMaterial({ color: 0x6fb9d4 }));
+    troughWater.position.set(twx, groundY(twx, twz) + 0.5, twz);
+    g.add(troughWater);
+
+    var cnt = 60, pg = new THREE.BufferGeometry(), pp = new Float32Array(cnt * 3), pv = [];
+    for (var k = 0; k < cnt; k++) {
+      pp[k * 3] = fountainPos.x; pp[k * 3 + 1] = fy + 2.2; pp[k * 3 + 2] = fountainPos.z;
+      pv.push({ a: rndRange(0, 6.28), r: rndRange(0.3, 1.1), life: rndRange(0, 1) });
+    }
+    pg.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+    var fountainPts = new THREE.Points(pg, new THREE.PointsMaterial({
+      color: 0xffffff, size: 0.26, transparent: true, opacity: 0.75, depthWrite: false,
+      map: cloudTex, blending: THREE.AdditiveBlending
+    }));
+    g.add(fountainPts);
+    addUpdater(function (dt) {
+      var arr = pg.attributes.position.array;
+      for (var i = 0; i < cnt; i++) {
+        var v = pv[i];
+        v.life += dt * 0.75;
+        if (v.life > 1) { v.life = 0; v.a = rndRange(0, 6.28); v.r = rndRange(0.3, 1.1); }
+        var drop = 1 - v.life;
+        arr[i * 3] = fountainPos.x + Math.cos(v.a) * v.r * (0.4 + (1 - drop) * 1.6);
+        arr[i * 3 + 1] = fy + 2.2 + drop * 1.5;
+        arr[i * 3 + 2] = fountainPos.z + Math.sin(v.a) * v.r * (0.4 + (1 - drop) * 1.6);
+      }
+      pg.attributes.position.needsUpdate = true;
+    });
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 石墙 / 石阶 / 碎石小径 ---------- */
+  function stoneWall(x, z, len, height, rot) {
+    var g = new THREE.Group();
+    var seg = Math.ceil(len / 1.2);
+    for (var i = 0; i < seg; i++) {
+      var sx = -len / 2 + i * 1.2 + 0.6;
+      var rows = Math.max(1, Math.round(height / 0.55));
+      for (var row = 0; row < rows; row++) {
+        var b = box(1.14, 0.5, 0.62, row % 2 ? M.stone : M.stoneDark);
+        b.position.set(sx + (row % 2 ? 0.2 : -0.2), 0.28 + row * 0.52, 0);
+        b.rotation.z = rndRange(-0.02, 0.02);
+        g.add(b);
+      }
+    }
+    g.position.set(x, groundY(x, z), z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  function stoneSteps(x, z, rot, steps, rise) {
+    var g = new THREE.Group();
+    for (var i = 0; i < steps; i++) {
+      var s = box(3.0, 0.3, 0.9, i % 2 ? M.stone : M.stoneDark);
+      s.position.set(0, 0.15 + i * rise, -i * 0.85);
+      s.receiveShadow = true;
+      g.add(s);
+    }
+    g.position.set(x, groundY(x, z), z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  function pebblePath(pts, width) {
+    var g = new THREE.Group();
+    var pebGeo = new THREE.CylinderGeometry(0.3, 0.32, 0.1, 6);
+    var matA = new THREE.MeshLambertMaterial({ color: 0xb0aa9a });
+    var matB = new THREE.MeshLambertMaterial({ color: 0x968f80 });
+    for (var i = 0; i < pts.length - 1; i++) {
+      var a = pts[i], b = pts[i + 1];
+      var dx = b[0] - a[0], dz = b[1] - a[1];
+      var len = Math.hypot(dx, dz);
+      var steps = Math.max(1, Math.round(len / 0.9));
+      var ang = Math.atan2(dx, dz);
+      for (var s = 0; s <= steps; s++) {
+        var t = s / steps;
+        var cx = a[0] + dx * t, cz = a[1] + dz * t;
+        var off = rndRange(-width / 2, width / 2);
+        var px = cx + Math.cos(ang) * off, pz = cz - Math.sin(ang) * off;
+        var peb = new THREE.Mesh(pebGeo, s % 2 ? matA : matB);
+        peb.position.set(px, groundY(px, pz) + 0.05, pz);
+        peb.rotation.y = rndRange(0, 3.14);
+        peb.receiveShadow = true;
+        g.add(peb);
+      }
+    }
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 木桥 ---------- */
+  function woodenBridge(x, z, rot, span) {
+    var g = new THREE.Group();
+    var plankGeo = new THREE.BoxGeometry(0.42, 0.12, span);
+    for (var i = 0; i < 14; i++) {
+      var pl = new THREE.Mesh(plankGeo, i % 2 ? M.wood : M.woodLight);
+      pl.position.set(-2.9 + i * 0.44, 0, 0);
+      pl.castShadow = true; pl.receiveShadow = true;
+      g.add(pl);
+    }
+    var arch = new THREE.Mesh(new THREE.TorusGeometry(span * 0.5, 0.16, 6, 14, Math.PI), M.woodDark);
+    arch.rotation.x = Math.PI / 2;
+    arch.position.y = -0.35;
+    g.add(arch);
+    for (var s = -1; s <= 1; s += 2) {
+      var rail = box(0.12, 0.14, span, M.woodDark);
+      rail.position.set(s * 2.85, 1.05, 0);
+      g.add(rail);
+      for (var p = 0; p <= 6; p++) {
+        var post = box(0.14, 1.05, 0.14, M.woodDark);
+        post.position.set(s * 2.85, 0.52, -span / 2 + p * (span / 6));
+        g.add(post);
+      }
+    }
+    for (var k = -1; k <= 1; k += 2) {
+      var pier = box(0.5, 1.6, 0.5, M.stoneDark);
+      pier.position.set(k * 2.4, -0.9, 0);
+      g.add(pier);
+    }
+    g.position.set(x, groundY(x, z) + 0.85, z);
+    g.rotation.y = rot;
+    scene.add(g);
+    return g;
+  }
+
+  /* ---------- 木栅栏（实例化） ---------- */
+  (function () {
+    var posts = [];
+    var rails = [];
+    function addRun(x1, z1, x2, z2) {
+      var dx = x2 - x1, dz = z2 - z1;
+      var len = Math.hypot(dx, dz);
+      var n = Math.max(2, Math.round(len / 2.6));
+      for (var i = 0; i <= n; i++) {
+        var t = i / n;
+        var px = x1 + dx * t, pz = z1 + dz * t;
+        if (streamDist(px, pz) < 7) continue;
+        posts.push({ x: px, z: pz, r: Math.atan2(dx, dz) });
+        if (i < n) {
+          var t2 = (i + 0.5) / n;
+          rails.push({ x: x1 + dx * t2, z: z1 + dz * t2, len: len / n, r: Math.atan2(dx, dz) });
+        }
+      }
+    }
+    var zA = 30, zB = 74, xA = -34, xB = 34;
+    addRun(xA, zA, -12, zA); addRun(2, zA, xB, zA);
+    addRun(xA, zB, -6, zB); addRun(14, zB, xB, zB);
+    addRun(xA, zA, xA, zB);
+    addRun(xB, zA, xB, zB);
+    addRun(-14, 24, -6, 24);
+    addRun(2, 26, 9, 26);
+
+    var postGeo = mergeParts([
+      { geo: new THREE.BoxGeometry(0.22, 1.25, 0.22), m: mat4(0, 0.62, 0), color: 0x9a6f3c }
+    ]);
+    var postMesh = new THREE.InstancedMesh(postGeo, new THREE.MeshLambertMaterial({ vertexColors: true }), posts.length);
+    postMesh.castShadow = true;
+    var m = new THREE.Matrix4();
+    for (var i = 0; i < posts.length; i++) {
+      m.copy(mat4(posts[i].x, groundY(posts[i].x, posts[i].z), posts[i].z, 0, posts[i].r, 0, 1));
+      postMesh.setMatrixAt(i, m);
+    }
+    postMesh.instanceMatrix.needsUpdate = true;
+    scene.add(postMesh);
+
+    var railGeo = mergeParts([
+      { geo: new THREE.BoxGeometry(0.1, 0.12, 1), m: mat4(0, 0.95, 0), color: 0xa87e46 },
+      { geo: new THREE.BoxGeometry(0.1, 0.12, 1), m: mat4(0, 0.55, 0), color: 0xa87e46 }
+    ]);
+    var railMesh = new THREE.InstancedMesh(railGeo, new THREE.MeshLambertMaterial({ vertexColors: true }), rails.length);
+    railMesh.castShadow = true;
+    for (var j = 0; j < rails.length; j++) {
+      var rr = rails[j];
+      m.copy(mat4(rr.x, groundY(rr.x, rr.z), rr.z, 0, rr.r, 0, 1));
+      m.multiply(new THREE.Matrix4().makeScale(1, 1, rr.len * 1.02));
+      railMesh.setMatrixAt(j, m);
+    }
+    railMesh.instanceMatrix.needsUpdate = true;
+    scene.add(railMesh);
+  })();
+
+  /* ---------- 缆车站与缆车 ---------- */
+  var cableCars = [];
+  (function () {
+    function station(x, z, rot, big) {
+      var g = new THREE.Group();
+      var base = box(big ? 7.0 : 5.4, 0.5, big ? 5.6 : 4.4, M.stoneDark);
+      base.position.y = 0.25;
+      g.add(base);
+      var bodyY = big ? 3.2 : 2.6;
+      var body = box(big ? 6.2 : 4.6, bodyY, big ? 4.8 : 3.8, M.wood);
+      body.position.y = 0.5 + bodyY / 2;
+      g.add(body);
+      var roof = gableRoof(big ? 7.0 : 5.3, big ? 5.6 : 4.5, 1.7, M.roofRed);
+      roof.position.y = 0.5 + bodyY;
+      roof.rotation.y = Math.PI / 2;
+      g.add(roof);
+      var open = new THREE.Mesh(new THREE.BoxGeometry(big ? 3.6 : 2.8, 2.4, 0.2), new THREE.MeshLambertMaterial({ color: 0x241d17 }));
+      open.position.set(0, 1.9, (big ? 2.42 : 1.92));
+      g.add(open);
+      var win = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.1), windowMat);
+      win.position.set(-1.7, 2.4, (big ? 2.42 : 1.92));
+      g.add(win);
+      var arm = box(0.28, 2.2, 0.28, M.iron);
+      arm.position.set(big ? 2.2 : 1.6, bodyY + 2.0, 0);
+      g.add(arm);
+      var wheel = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.13, 6, 14), M.iron);
+      wheel.position.set(big ? 2.2 : 1.6, bodyY + 3.0, 0);
+      wheel.rotation.y = Math.PI / 2;
+      g.add(wheel);
+      g.position.set(x, groundY(x, z), z);
+      g.rotation.y = rot;
+      g.scale.setScalar(big ? 1.22 : 1.0);
+      scene.add(g);
+      return g;
+    }
+    var bx = 30, bz = 38, tx = -44, tz = -24;
+    station(bx, bz, -0.4, true);
+    station(tx, tz, -0.4, false);
+
+    var y0 = groundY(bx, bz) + 9.2;
+    var y1 = groundY(tx, tz) + 8.0;
+    var curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(bx + 2.4, y0, bz),
+      new THREE.Vector3((bx + tx) / 2, (y0 + y1) / 2 - 3.2, (bz + tz) / 2),
+      new THREE.Vector3(tx + 1.8, y1, tz)
+    ]);
+    var wireMat = new THREE.MeshLambertMaterial({ color: 0x3b3f42 });
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.07, 5, false), wireMat));
+    var curve2 = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(bx + 2.4, y0 - 0.75, bz),
+      new THREE.Vector3((bx + tx) / 2, (y0 + y1) / 2 - 3.95, (bz + tz) / 2),
+      new THREE.Vector3(tx + 1.8, y1 - 0.75, tz)
+    ]);
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(curve2, 40, 0.07, 5, false), wireMat));
+
+    function makeCableCar(color) {
+      var g = new THREE.Group();
+      var hanger = box(0.1, 0.85, 0.1, M.iron);
+      hanger.position.y = 0.62;
+      g.add(hanger);
+      var clamp0 = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.05, 5, 9), M.iron);
+      clamp0.position.y = 1.05;
+      g.add(clamp0);
+      var cabMat = new THREE.MeshLambertMaterial({ color: color });
+      var cab = box(1.55, 1.25, 1.35, cabMat);
+      cab.position.y = -0.15;
+      g.add(cab);
+      var top = box(1.7, 0.14, 1.5, M.roofDark);
+      top.position.y = 0.5;
+      g.add(top);
+      var gl = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 1.38), new THREE.MeshLambertMaterial({ color: 0xa9d3e0 }));
+      gl.position.y = 0.05;
+      g.add(gl);
+      scene.add(g);
+      return g;
+    }
+    cableCars.push({ g: makeCableCar(0xd94f4f), curve: curve, t: 0.08, dir: 1, speed: 0.032 });
+    cableCars.push({ g: makeCableCar(0xf0c04a), curve: curve2, t: 0.7, dir: -1, speed: 0.03 });
+    addUpdater(function (dt) {
+      for (var i = 0; i < cableCars.length; i++) {
+        var c = cableCars[i];
+        c.t += c.dir * c.speed * dt;
+        if (c.t > 1) { c.t = 1; c.dir = -1; }
+        if (c.t < 0) { c.t = 0; c.dir = 1; }
+        var p = c.curve.getPoint(c.t);
+        c.g.position.set(p.x, p.y - 0.55, p.z);
+        c.g.rotation.z = Math.sin(c.t * 9 + i) * 0.035;
+      }
+    });
+  })();
+
+  /* ---------- 牲畜 ---------- */
+  function makeCow() {
+    var g = new THREE.Group();
+    var body = box(1.75, 0.95, 0.95, M.cowBody);
+    body.position.y = 1.02;
+    g.add(body);
+    for (var i = 0; i < 4; i++) {
+      var leg = box(0.2, 0.62, 0.2, M.cowBody);
+      leg.position.set((i < 2 ? -0.62 : 0.62), 0.33, (i % 2 ? 0.3 : -0.3));
+      g.add(leg);
+    }
+    var head = box(0.72, 0.6, 0.62, M.cowBody);
+    head.position.set(0.98, 1.32, 0);
+    g.add(head);
+    var snout = box(0.26, 0.3, 0.4, new THREE.MeshLambertMaterial({ color: 0xe8c6bd }));
+    snout.position.set(1.32, 1.18, 0);
+    g.add(snout);
+    for (var s = 0; s < 4; s++) {
+      var spot = box(0.5, 0.36, 0.06, M.cowSpot);
+      spot.position.set(-0.55 + s * 0.38, 1.05 + (s % 2) * 0.18, 0.49);
+      g.add(spot);
+    }
+    var hornMat = new THREE.MeshLambertMaterial({ color: 0xd9ccae });
+    for (var h = -1; h <= 1; h += 2) {
+      var horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.28, 5), hornMat);
+      horn.position.set(1.0, 1.68, h * 0.22);
+      horn.rotation.z = h * 0.3;
+      g.add(horn);
+    }
+    var tail = box(0.08, 0.55, 0.08, M.cowSpot);
+    tail.position.set(-0.88, 1.0, 0);
+    g.add(tail);
+    return g;
+  }
+  function makeGoat() {
+    var g = new THREE.Group();
+    var body = box(1.0, 0.6, 0.55, M.goat);
+    body.position.y = 0.62;
+    g.add(body);
+    for (var i = 0; i < 4; i++) {
+      var leg = box(0.12, 0.42, 0.12, M.goat);
+      leg.position.set((i < 2 ? -0.34 : 0.34), 0.21, (i % 2 ? 0.18 : -0.18));
+      g.add(leg);
+    }
+    var head = box(0.4, 0.36, 0.32, M.goat);
+    head.position.set(0.58, 0.82, 0);
+    g.add(head);
+    var hornMat = new THREE.MeshLambertMaterial({ color: 0x8e7d5f });
+    for (var h = -1; h <= 1; h += 2) {
+      var horn = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.26, 5), hornMat);
+      horn.position.set(0.56, 1.05, h * 0.12);
+      horn.rotation.z = h * 0.25;
+      g.add(horn);
+    }
+    var beard = box(0.1, 0.2, 0.1, new THREE.MeshLambertMaterial({ color: 0xb7a98d }));
+    beard.position.set(0.76, 0.62, 0);
+    g.add(beard);
+    return g;
+  }
+  function makeDog() {
+    var g = new THREE.Group();
+    var body = box(0.72, 0.4, 0.34, M.dog);
+    body.position.y = 0.5;
+    g.add(body);
+    for (var i = 0; i < 4; i++) {
+      var leg = box(0.1, 0.32, 0.1, M.dog);
+      leg.position.set((i < 2 ? -0.24 : 0.24), 0.16, (i % 2 ? 0.13 : -0.13));
+      g.add(leg);
+    }
+    var head = box(0.32, 0.3, 0.28, M.dog);
+    head.position.set(0.44, 0.66, 0);
+    g.add(head);
+    var earMat = new THREE.MeshLambertMaterial({ color: 0x5f4630 });
+    for (var e = -1; e <= 1; e += 2) {
+      var ear = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), earMat);
+      ear.position.set(0.4, 0.86, e * 0.12);
+      g.add(ear);
+    }
+    var tail = box(0.08, 0.36, 0.08, earMat);
+    tail.position.set(-0.4, 0.62, 0);
+    tail.rotation.z = -0.5;
+    g.add(tail);
+    return g;
+  }
+  function makeSheep() {
+    var g = new THREE.Group();
+    var wool = new THREE.Mesh(new THREE.IcosahedronGeometry(0.48, 1), new THREE.MeshLambertMaterial({ color: 0xf4f1e8 }));
+    wool.scale.set(1.25, 0.95, 0.95);
+    wool.position.y = 0.62;
+    wool.castShadow = true;
+    g.add(wool);
+    var head = box(0.3, 0.28, 0.26, new THREE.MeshLambertMaterial({ color: 0x44403c }));
+    head.position.set(0.56, 0.66, 0);
+    g.add(head);
+    for (var i = 0; i < 4; i++) {
+      var leg = box(0.09, 0.32, 0.09, new THREE.MeshLambertMaterial({ color: 0x44403c }));
+      leg.position.set((i < 2 ? -0.3 : 0.3), 0.16, (i % 2 ? 0.16 : -0.16));
+      g.add(leg);
+    }
+    return g;
+  }
+
+  function scatterAnimal(factory, x, z, rot, s) {
+    var a = factory();
+    a.position.set(x, groundY(x, z), z);
+    a.rotation.y = rot === undefined ? rndRange(0, 6.28) : rot;
+    if (s) a.scale.setScalar(s);
+    scene.add(a);
+    return a;
+  }
+
+  /* ============================================================
+     场景布置（按悬浮岛圆盘重排：环形聚落 + 南侧草甸牧场）
+     ============================================================ */
+  function placeScaled(fn, x, z, rot, s) {
+    var g = fn(x, z, rot);
+    if (s) g.scale.setScalar(s);
+    return g;
+  }
+  function placeCabin(x, z, opts, s) {
+    var g = cabin(x, z, opts);
+    if (s) g.scale.setScalar(s);
+    return g;
+  }
+
+  plaza(-7, 2, 6.0);
+
+  placeScaled(church, -19, -12, 0.28, 1.26);
+  placeScaled(cheeseWorkshop, -5, -28, -0.12, 1.60);      /* ② 奶酪工坊 = 最匹配的活法 */
+  placeScaled(herdsmanHut, -27, 12, 0.5, 1.60);           /* ① 牧人小屋 = 我的画像 */
+  placeScaled(hayBarn, -16, 30, 0.16, 1.46);
+
+  placeCabin(-21, -2, { rot: 0.22, w: 4.8, d: 4.2, h: 2.9 }, 1.36);
+  placeCabin(-11, 16, { rot: -0.42, w: 4.4, d: 3.8, h: 2.6, bodyMat: M.plaster, roofMat: M.roofDark }, 1.36);
+  placeCabin(8, 13, { rot: 0.36, w: 4.2, d: 3.6, h: 2.5 }, 1.36);
+  placeCabin(-24, 21, { rot: 0.62, w: 4.0, d: 3.6, h: 2.4, chimney: false }, 1.34);
+  placeCabin(14, -7, { rot: -0.12, w: 3.8, d: 3.4, h: 2.3, bodyMat: M.woodLight }, 1.32);
+  placeCabin(-13, -18, { rot: -0.24, w: 4.2, d: 3.8, h: 2.6, roofMat: M.roofDark }, 1.34);
+
+  /* 石板路：以广场为心向外辐射到五处地标 */
+  pebblePath([[-19, -9], [-15, -4], [-11, 0], [-7, 2]], 2.6);
+  pebblePath([[-7, 2], [-13, 5], [-19, 8], [-25, 11]], 2.2);              /* → 牧人小屋 */
+  pebblePath([[-7, 2], [-6, -7], [-6, -15], [-5, -22], [-5, -26]], 2.0);  /* → 奶酪工坊 */
+  pebblePath([[-7, 2], [-2, 7], [4, 12], [11, 20], [17, 27], [20, 31]], 2.2);
+  pebblePath([[-7, 2], [-8, 12], [-10, 22], [-11, 31], [-12, 36]], 2.0);  /* → 路标 */
+
+  stoneWall(-18, 34, 12, 1.1, 0.05);
+  stoneWall(12, 30, 9, 0.9, -0.12);
+  stoneWall(-28, -14, 8, 1.2, 0.5);
+  stoneSteps(-7, 10, Math.PI, 5, 0.34);
+  stoneSteps(13, -15, -0.6, 4, 0.32);
+
+  woodenBridge(1.0, 8.5, 0.15, 7.0);
+
+  /* 牲畜：南侧草甸，按新岛尺度放大 1.2–1.4 倍 */
+  scatterAnimal(makeCow, 4, 44, 2.4, 1.56);
+  scatterAnimal(makeCow, -4, 39, -0.7, 1.52);
+  scatterAnimal(makeCow, 13, 39, 3.6, 1.56);
+  scatterAnimal(makeCow, -25, 41, 1.2, 1.50);
+  scatterAnimal(makeCow, 27, 42, 0.4, 1.52);
+  scatterAnimal(makeGoat, 7, 33, 1.9, 1.52);
+  scatterAnimal(makeGoat, 11, 29, 4.2, 1.46);
+  scatterAnimal(makeGoat, -20, 35, 0.8, 1.46);
+  scatterAnimal(makeGoat, -31, 33, 2.6, 1.42);
+  scatterAnimal(makeSheep, -7, 42, 1.4, 1.54);
+  scatterAnimal(makeSheep, -1, 47, 2.9, 1.54);
+  scatterAnimal(makeSheep, 17, 44, 0.6, 1.52);
+  scatterAnimal(makeDog, 1, 35, 1.0, 1.50);
+
+  (function () {
+    for (var i = 0; i < 5; i++) {
+      var crate = box(0.9, 0.9, 0.9, M.woodLight);
+      var cx = 17 + (i % 3) * 1.05, cz = 28 - Math.floor(i / 3) * 1.1;
+      crate.position.set(cx, groundY(cx, cz) + 0.45, cz);
+      crate.rotation.y = rndRange(0, 1);
+      scene.add(crate);
+    }
+  })();
+
+
+  /* ============================================================
+     二维像素立牌小人
+     ============================================================ */
+  var PX_W = 20, PX_H = 28, PX_UNIT = 7;
+
+  function drawChar(ctx, ox, oy, u, pal, legPhase, armPhase) {
+    function px(gx, gy, gw, gh, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(ox + gx * u, oy + gy * u, gw * u, gh * u);
+    }
+    // 描边阴影（整体底部）
+    // 帽子
+    px(5, 2, 10, 2, pal.hat);
+    px(4, 4, 12, 1, pal.hat);
+    px(4, 4, 12, 1, pal.hatEdge);
+    // 头
+    px(7, 5, 6, 5, pal.skin);
+    px(7, 5, 6, 1, pal.hair);
+    // 眼睛
+    px(8, 7, 1, 1, pal.eye);
+    px(11, 7, 1, 1, pal.eye);
+    // 脖子
+    px(9, 10, 2, 1, pal.skin);
+    // 身体（外套）
+    px(6, 11, 8, 8, pal.coat);
+    px(6, 11, 8, 1, pal.coatDark);
+    px(9, 12, 2, 6, pal.coatLight);
+    // 围裙 / 背带
+    if (pal.apron) px(7, 13, 6, 6, pal.apron);
+    // 手臂
+    var aL = armPhase > 0 ? 1 : 0, aR = armPhase < 0 ? 1 : 0;
+    px(5, 12 + aL, 1, 5, pal.coat);
+    px(14, 12 + aR, 1, 5, pal.coat);
+    px(5, 17 + aL, 1, 2, pal.skin);
+    px(14, 17 + aR, 1, 2, pal.skin);
+    // 腿
+    if (legPhase === 0) {
+      px(7, 19, 2, 6, pal.pants);
+      px(11, 19, 2, 6, pal.pants);
+      px(7, 25, 3, 2, pal.boot);
+      px(11, 25, 3, 2, pal.boot);
+    } else if (legPhase === 1) {
+      px(6, 19, 2, 5, pal.pants);
+      px(12, 19, 2, 6, pal.pants);
+      px(5, 24, 3, 2, pal.boot);
+      px(12, 26, 3, 2, pal.boot);
+    } else {
+      px(8, 19, 2, 6, pal.pants);
+      px(10, 19, 2, 5, pal.pants);
+      px(8, 26, 3, 2, pal.boot);
+      px(11, 24, 3, 2, pal.boot);
+    }
+    // 背包
+    if (pal.pack) px(14, 12, 2, 5, pal.pack);
+  }
+
+  function makeCharTexture(pal) {
+    var frames = 4;
+    var cw = PX_W * PX_UNIT, ch = PX_H * PX_UNIT;
+    var cv = document.createElement('canvas');
+    cv.width = cw * frames; cv.height = ch;
+    var ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    var poses = [
+      { leg: 0, arm: 0 }, { leg: 1, arm: 1 }, { leg: 0, arm: 0 }, { leg: 2, arm: -1 }
+    ];
+    for (var f = 0; f < frames; f++) {
+      drawChar(ctx, f * cw, 0, PX_UNIT, pal, poses[f].leg, poses[f].arm);
+    }
+    var tex = new THREE.CanvasTexture(cv);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.repeat.set(1 / frames, 1);
+    tex.offset.set(0, 0);
+    return tex;
+  }
+
+  var PALETTES = {
+    herder: {
+      hat: 0x7a5a34, hatEdge: 0x5e4326, skin: 0xe9c199, hair: 0x4a3524, eye: 0x2c2118,
+      coat: 0x4f7a52, coatDark: 0x3c5f3f, coatLight: 0x6e9c6f, pants: 0x3f4a52, boot: 0x33291f
+    },
+    baker: {
+      hat: 0xf2efe6, hatEdge: 0xd9d3c4, skin: 0xeec59f, hair: 0x6b4a2c, eye: 0x2c2118,
+      coat: 0xf4f0e4, coatDark: 0xd9d2c0, coatLight: 0xffffff, apron: 0xffffff,
+      pants: 0x6a5a48, boot: 0x3a2f22
+    },
+    child: {
+      hat: 0xc0503f, hatEdge: 0x9c3f31, skin: 0xf0cba4, hair: 0x3b2a1c, eye: 0x2c2118,
+      coat: 0xe0b552, coatDark: 0xc39b3c, coatLight: 0xf0cd78, pants: 0x4a5a6a, boot: 0x3a2f22
+    },
+    visitor: {
+      hat: 0x3f5a72, hatEdge: 0x2f4559, skin: 0xe8bf96, hair: 0x2b2119, eye: 0x2c2118,
+      coat: 0xa94b45, coatDark: 0x8b3a35, coatLight: 0xc2655e, pants: 0x3c4450,
+      boot: 0x2f251b, pack: 0x6d8a5a
+    }
+  };
+
+  // 调色板数值转 CSS 颜色字符串（Canvas 需要字符串）
+  (function () {
+    for (var k in PALETTES) {
+      if (!PALETTES.hasOwnProperty(k)) continue;
+      var o = PALETTES[k];
+      for (var kk in o) {
+        if (typeof o[kk] === 'number') {
+          o[kk] = '#' + ('000000' + o[kk].toString(16)).slice(-6);
+        }
+      }
+    }
+  })();
+
+  var pixelChars = [];
+  function addPixelChar(palKey, path, speed, scale) {
+    var tex = makeCharTexture(PALETTES[palKey]);
+    var mat = new THREE.MeshLambertMaterial({
+      map: tex, transparent: true, alphaTest: 0.45, side: THREE.DoubleSide
+    });
+    var w = 1.55 * (scale || 1), h = 2.2 * (scale || 1);
+    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    mesh.castShadow = false;
+    scene.add(mesh);
+
+    var blob = new THREE.Mesh(
+      new THREE.PlaneGeometry(w * 1.05, h * 0.42),
+      new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.3, depthWrite: false, color: 0x1b2430 })
+    );
+    blob.rotation.x = -Math.PI / 2;
+    blob.renderOrder = 2;
+    scene.add(blob);
+
+    // 草屑 / 花瓣
+    var puffGeo = new THREE.BufferGeometry();
+    var puffN = 10;
+    puffGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(puffN * 3), 3));
+    var puffMat = new THREE.PointsMaterial({
+      color: 0xd8c98a, size: 0.22, transparent: true, opacity: 0.8, depthWrite: false, map: cloudTex
+    });
+    var puffs = new THREE.Points(puffGeo, puffMat);
+    puffs.frustumCulled = false;
+    scene.add(puffs);
+    var puffData = [];
+    for (var i = 0; i < puffN; i++) puffData.push({ life: 1, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0 });
+
+    var c = {
+      mesh: mesh, blob: blob, tex: tex, mat: mat, w: w, h: h,
+      path: path, idx: 0, t: 0, speed: speed,
+      moving: true, idleTimer: 0, facing: 1, frame: 0, frameTimer: 0,
+      breath: rndRange(0, 6.28), laps: 0, pos: new THREE.Vector3(),
+      puffs: puffs, puffData: puffData, puffGeo: puffGeo, puffCursor: 0
+    };
+    c.pos.set(path[0][0], 0, path[0][1]);
+    pixelChars.push(c);
+    return c;
+  }
+
+  addPixelChar('herder', [[-14, 18], [-6, 26], [-11, 34], [-21, 30], [-20, 22]], 1.5, 1.15);
+  addPixelChar('baker', [[-6, 2], [-2, 8], [-3, 14], [-11, 13], [-12, 5]], 1.25, 1.15);
+  addPixelChar('child', [[4, 40], [9, 45], [1, 47], [-5, 42]], 1.9, 0.92);
+  addPixelChar('visitor', [[12, -14], [15, -6], [8, 0], [-1, -4], [4, -12]], 1.35, 1.15);
+
+  function emitPuff(c) {
+    var d = c.puffData[c.puffCursor % c.puffData.length];
+    c.puffCursor++;
+    d.life = 0;
+    d.x = c.pos.x + rndRange(-0.4, 0.4);
+    d.y = groundY(c.pos.x, c.pos.z) + 0.15;
+    d.z = c.pos.z + rndRange(-0.4, 0.4);
+    d.vx = rndRange(-0.5, 0.5); d.vy = rndRange(0.7, 1.6); d.vz = rndRange(-0.5, 0.5);
+  }
+
+  function updatePixelChars(dt) {
+    var camAz = cam.az;
+    for (var i = 0; i < pixelChars.length; i++) {
+      var c = pixelChars[i];
+      var target = c.path[c.idx];
+      var dx = target[0] - c.pos.x, dz = target[1] - c.pos.z;
+      var dist = Math.hypot(dx, dz);
+
+      if (c.moving) {
+        if (dist < 0.35) {
+          c.moving = false;
+          c.idleTimer = rndRange(0.9, 2.6);
+          c.idx = (c.idx + 1) % c.path.length;
+          if (c.idx === 0) c.laps++;
+        } else {
+          var sp = c.speed * dt;
+          c.pos.x += dx / dist * sp;
+          c.pos.z += dz / dist * sp;
+          c.facing = (dx * Math.cos(camAz) - dz * Math.sin(camAz)) >= 0 ? 1 : -1;
+          c.frameTimer += dt;
+          if (c.frameTimer > 1 / 7) {
+            c.frameTimer = 0;
+            c.frame = (c.frame + 1) % 4;
+            c.tex.offset.x = c.frame / 4;
+            if (c.frame % 2 === 0) emitPuff(c);
+          }
+        }
+      } else {
+        c.idleTimer -= dt;
+        c.frame = 0;
+        c.tex.offset.x = 0;
+        // 停顿时左右转向
+        c.facing = Math.sin(c.idleTimer * 3.0 + i) >= 0 ? 1 : -1;
+        if (c.idleTimer <= 0) c.moving = true;
+      }
+
+      // 到新位置（多轮后换个地方）
+      if (c.laps >= 3) {
+        c.laps = 0;
+        var nx = clamp(c.pos.x + rndRange(-6, 6), -24, 24);
+        var nz = clamp(c.pos.z + rndRange(-6, 6), -22, 46);
+        c.path.push([nx, nz]);
+        if (c.path.length > 8) c.path.shift();
+      }
+
+      var gy = groundY(c.pos.x, c.pos.z);
+      c.breath += dt * 2.4;
+      var breathe = 1 + Math.sin(c.breath) * 0.018;
+      c.mesh.position.set(c.pos.x, gy + c.h / 2 + Math.sin(c.breath) * 0.015, c.pos.z);
+      c.mesh.rotation.y = camAz;
+      c.mesh.scale.set(c.facing, breathe, 1);
+      c.blob.position.set(c.pos.x, gy + 0.12, c.pos.z);
+      c.blob.rotation.z = camAz;
+
+      // 草屑
+      var arr = c.puffGeo.attributes.position.array;
+      for (var p = 0; p < c.puffData.length; p++) {
+        var d = c.puffData[p];
+        if (d.life < 1) {
+          d.life += dt * 1.5;
+          d.x += d.vx * dt; d.y += d.vy * dt; d.z += d.vz * dt;
+          d.vy -= 1.2 * dt;
+          arr[p * 3] = d.x; arr[p * 3 + 1] = d.y; arr[p * 3 + 2] = d.z;
+        } else {
+          arr[p * 3 + 1] = -999;
+        }
+      }
+      c.puffGeo.attributes.position.needsUpdate = true;
+    }
+  }
+
+  /* ============================================================
+     炊烟
+     ============================================================ */
+  (function () {
+    for (var i = 0; i < smokeEmitters.length; i++) {
+      var e = smokeEmitters[i];
+      var puffs = [];
+      var n = 7;
+      for (var j = 0; j < n; j++) {
+        var sp = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: cloudTex, transparent: true, opacity: 0.4, depthWrite: false, color: 0xdcdcd6
+        }));
+        sp.position.set(e.x, e.y, e.z);
+        sp.scale.setScalar(0.7 * e.s);
+        scene.add(sp);
+        puffs.push({ sp: sp, life: j / n, drift: rndRange(-0.25, 0.25) });
+      }
+      (function (puffs, e) {
+        addUpdater(function (dt) {
+          for (var k = 0; k < puffs.length; k++) {
+            var p = puffs[k];
+            p.life += dt * 0.28;
+            if (p.life > 1) p.life = 0;
+            var l = p.life;
+            p.sp.position.set(
+              e.x + p.drift * l * 5.0 + Math.sin(l * 6.5 + k) * 0.5 * l,
+              e.y + l * 9.2 * e.s,
+              e.z + Math.cos(l * 4.2 + k) * 0.7 * l
+            );
+            var sc = (0.55 + l * 2.6) * e.s;
+            p.sp.scale.set(sc, sc, 1);
+            p.sp.material.opacity = 0.42 * (1 - l) * (0.25 + l * 1.4);
+          }
+        });
+      })(puffs, e);
+    }
+  })();
+
+  /* ============================================================
+     天气系统
+     ============================================================ */
+  var weatherTargets = {
+    clear: { rain: 0, snow: 0, fog: 0 },
+    rain: { rain: 1, snow: 0, fog: 0.35 },
+    fog: { rain: 0, snow: 0, fog: 1 },
+    snow: { rain: 0, snow: 1, fog: 0.25 }
+  };
+
+  // 雨
+  var rainCount = 1500;
+  var rainGeo = new THREE.BufferGeometry();
+  var rainPos = new Float32Array(rainCount * 3);
+  var rainVel = [];
+  for (var ri = 0; ri < rainCount; ri++) {
+    rainPos[ri * 3] = rndRange(-82, 82);
+    rainPos[ri * 3 + 1] = rndRange(-8, 96);
+    rainPos[ri * 3 + 2] = rndRange(-82, 82);
+    rainVel.push(rndRange(58, 86));
+  }
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+  var rainMat = new THREE.PointsMaterial({
+    color: 0xcfe6f5, size: 0.42, transparent: true, opacity: 0.0, depthWrite: false
+  });
+  var rainPts = new THREE.Points(rainGeo, rainMat);
+  rainPts.frustumCulled = false;
+  rainPts.visible = false;
+  scene.add(rainPts);
+
+  // 雪
+  var snowCount = 2600;
+  var snowGeo = new THREE.BufferGeometry();
+  var snowPos = new Float32Array(snowCount * 3);
+  var snowMeta = [];
+  for (var si2 = 0; si2 < snowCount; si2++) {
+    snowPos[si2 * 3] = rndRange(-82, 82);
+    snowPos[si2 * 3 + 1] = rndRange(0, 100);
+    snowPos[si2 * 3 + 2] = rndRange(-82, 82);
+    snowMeta.push({ fall: rndRange(2.4, 5.6), ph: rndRange(0, 6.28), amp: rndRange(0.6, 1.8) });
+  }
+  snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+  var snowMat = new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.72, transparent: true, opacity: 0.0, depthWrite: false, map: cloudTex
+  });
+  var snowPts = new THREE.Points(snowGeo, snowMat);
+  snowPts.frustumCulled = false;
+  snowPts.visible = false;
+  scene.add(snowPts);
+
+  var overcastSky = new THREE.Color(0xa9b6c0);
+  var overcastBottom = new THREE.Color(0xc9d2d8);
+
+  var _tintWhite = new THREE.Color(0xffffff);
+  var _tintWet = new THREE.Color(0x9aa6a2);
+  var _tintSnow = new THREE.Color(1.72, 1.82, 1.96);
+  var _tintEmi = new THREE.Color(0, 0, 0);
+  var weatherTintMats = (function () {
+    var list = [], seen = [];
+    scene.traverse(function (o) {
+      if (!o.isMesh || !o.material) return;
+      var ms = Array.isArray(o.material) ? o.material : [o.material];
+      for (var i = 0; i < ms.length; i++) {
+        var m = ms[i];
+        if (m && m.isMeshLambertMaterial && m.vertexColors && seen.indexOf(m) < 0) {
+          seen.push(m); list.push(m);
+        }
+      }
+    });
+    return list;
+  })();
+
+  function applyWeather() {
+    var w = state.weatherMix;
+    var wet = Math.max(w.rain, w.snow * 0.55);
+    // 天空转阴
+    var topC = sampleStops(TOD.skyTop, state.time).lerp(overcastSky, wet * 0.75 + w.fog * 0.35);
+    var botC = sampleStops(TOD.skyBottom, state.time).lerp(overcastBottom, wet * 0.7 + w.fog * 0.3);
+    skyUniforms.uTop.value.copy(topC);
+    skyUniforms.uBottom.value.copy(botC);
+    // 光照减弱
+    sun.intensity *= (1 - 0.5 * w.rain - 0.34 * w.snow - 0.22 * w.fog);
+    hemi.intensity *= (1 - 0.18 * w.rain - 0.12 * w.snow) + 0.1 * w.fog;
+    // 雾
+    scene.fog.near = lerp(255, 40, w.fog) - 20 * w.rain;
+    scene.fog.far = lerp(900, 150, w.fog) - 60 * w.rain;
+    if (w.fog > 0.02) {
+      var fogC = sampleStops(TOD.fogColor, state.time).lerp(new THREE.Color(0xdadedd), w.fog * 0.7);
+      scene.fog.color.copy(fogC);
+      renderer.setClearColor(fogC, 1);
+    }
+    renderer.toneMappingExposure *= (1 - 0.14 * w.rain - 0.05 * w.snow - 0.06 * w.fog);
+    cloudGroup.visible = w.fog < 0.65;
+
+    // 地表与植被着色反馈：雨天压暗湿润、雪天覆白
+    var snowAmt = clamp(w.snow, 0, 1), rainAmt = clamp(w.rain, 0, 1);
+    var wetTint = _tintWhite.clone().lerp(_tintWet, clamp(rainAmt * 0.55 + w.fog * 0.18, 0, 1));
+    wetTint.lerp(_tintSnow, snowAmt * 0.30);
+    _tintEmi.setRGB(0.58 * snowAmt, 0.63 * snowAmt, 0.72 * snowAmt);
+    for (var ti = 0; ti < weatherTintMats.length; ti++) {
+      weatherTintMats[ti].color.copy(wetTint);
+      weatherTintMats[ti].emissive.copy(_tintEmi);
+    }
+  }
+
+  function updateWeather(dt) {
+    var tgt = weatherTargets[state.weather] || weatherTargets.clear;
+    var k = Math.min(1, dt * 1.6);
+    state.weatherMix.rain += (tgt.rain - state.weatherMix.rain) * k;
+    state.weatherMix.snow += (tgt.snow - state.weatherMix.snow) * k;
+    state.weatherMix.fog += (tgt.fog - state.weatherMix.fog) * k;
+
+    var mix = state.weatherMix;
+
+    // 雨
+    rainMat.opacity = mix.rain * 0.6;
+    rainPts.visible = mix.rain > 0.02;
+    if (rainPts.visible) {
+      var arr = rainGeo.attributes.position.array;
+      for (var i = 0; i < rainCount; i++) {
+        arr[i * 3 + 1] -= rainVel[i] * dt;
+        arr[i * 3] += 4.0 * dt;
+        if (arr[i * 3 + 1] < -4) {
+          arr[i * 3 + 1] = rndRange(70, 112);
+          arr[i * 3] = rndRange(-82, 82);
+          arr[i * 3 + 2] = rndRange(-82, 82);
+        }
+      }
+      rainGeo.attributes.position.needsUpdate = true;
+    }
+
+    // 雪
+    snowMat.opacity = mix.snow * 0.92;
+    snowPts.visible = mix.snow > 0.02;
+    if (snowPts.visible) {
+      var sarr = snowGeo.attributes.position.array;
+      for (var j = 0; j < snowCount; j++) {
+        var m = snowMeta[j];
+        sarr[j * 3 + 1] -= m.fall * dt;
+        sarr[j * 3] += Math.sin(state.clock * 0.6 + m.ph) * m.amp * dt;
+        sarr[j * 3 + 2] += Math.cos(state.clock * 0.5 + m.ph) * m.amp * 0.5 * dt;
+        if (sarr[j * 3 + 1] < -2) {
+          sarr[j * 3 + 1] = rndRange(60, 100);
+          sarr[j * 3] = rndRange(-82, 82);
+          sarr[j * 3 + 2] = rndRange(-82, 82);
+        }
+      }
+      snowGeo.attributes.position.needsUpdate = true;
+    }
+
+    // 水面遇雨更浑
+    waterUniforms.uFoam.value = mix.rain * 0.35;
+  }
+
+  /* ============================================================
+     傍晚暖光（窗内）
+     ============================================================ */
+  (function () {
+    var pts = [[-7, 3, 2], [-5, 3, -26], [-19, 3, -10], [-11, 2.5, 16]];
+    for (var i = 0; i < pts.length; i++) {
+      var l = new THREE.PointLight(0xffb066, 0, 26);
+      l.position.set(pts[i][0], groundY(pts[i][0], pts[i][2]) + pts[i][1], pts[i][2]);
+      scene.add(l);
+      warmLights.push(l);
+    }
+  })();
+
+  /* ============================================================
+     UI 绑定
+     ============================================================ */
+  var uiButtons = document.querySelectorAll('[data-weather]');
+  function setWeather(name) {
+    state.weather = name;
+    for (var i = 0; i < uiButtons.length; i++) {
+      uiButtons[i].classList.toggle('on', uiButtons[i].getAttribute('data-weather') === name);
+    }
+    var labels = { clear: '晴', rain: '阵雨', fog: '雾', snow: '飘雪' };
+    var st = document.getElementById('wstate');
+    if (st) st.textContent = labels[name] || name;
+  }
+  for (var bi = 0; bi < uiButtons.length; bi++) {
+    uiButtons[bi].addEventListener('click', function () {
+      setWeather(this.getAttribute('data-weather'));
+    });
+  }
+  setWeather('clear');
+
+  var timeSlider = document.getElementById('time');
+  var autoBox = document.getElementById('auto');
+  var timeLabel = document.getElementById('tlabel');
+  function timeName(t) {
+    if (t < 0.22) return '清晨';
+    if (t < 0.44) return '上午';
+    if (t < 0.62) return '正午';
+    if (t < 0.82) return '午后';
+    return '傍晚';
+  }
+  function syncTimeUI() {
+    if (timeSlider) timeSlider.value = String(Math.round(state.time * 100));
+    if (timeLabel) timeLabel.textContent = timeName(state.time);
+  }
+  if (timeSlider) {
+    timeSlider.addEventListener('input', function () {
+      state.time = clamp(parseFloat(this.value) / 100, 0, 1);
+      if (autoBox) autoBox.checked = false;
+      applyTime();
+      syncTimeUI();
+    });
+  }
+  var autoTime = true;
+  if (autoBox) {
+    autoBox.checked = true;
+    autoBox.addEventListener('change', function () { autoTime = this.checked; });
+  }
+  var timeDir = 1;
+
+  /* ============================================================
+     主循环
+     ============================================================ */
+  state.clock = 0;
+  var clock = new THREE.Clock();
+  var frames = 0, fpsAcc = 0, fpsValue = 60;
+  var fpsEl = document.getElementById('fps');
+
+  applyTime();
+  syncTimeUI();
+  updateCamera(0.016);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    var dt = Math.min(clock.getDelta(), 0.05);
+    state.clock += dt;
+
+    if (autoTime) {
+      state.time += dt * 0.011 * timeDir;
+      if (state.time > 0.94) { state.time = 0.94; timeDir = -1; }
+      if (state.time < 0.06) { state.time = 0.06; timeDir = 1; }
+      applyTime();
+      syncTimeUI();
+    }
+
+    waterUniforms.uTime.value = state.clock;
+    applyWeather();
+    updateWeather(dt);
+    updatePixelChars(dt);
+    for (var i = 0; i < updaters.length; i++) updaters[i](dt, state.clock);
+    updateCamera(dt);
+
+    renderer.render(scene, camera);
+
+    frames++;
+    fpsAcc += dt;
+    if (fpsAcc > 0.6) {
+      fpsValue = Math.round(frames / fpsAcc);
+      frames = 0; fpsAcc = 0;
+      if (fpsEl) fpsEl.textContent = fpsValue + ' fps';
+    }
+  }
+
+  // 轻量检查入口（只读，不影响画面）
+  window.SNOWLINE = { scene: scene, camera: camera, cam: cam, camTarget: camTarget, chars: pixelChars, state: state };
+
+  var loading = document.getElementById('loading');
+  if (loading) {
+    loading.style.opacity = '0';
+    setTimeout(function () { loading.style.display = 'none'; }, 500);
+  }
+  animate();
+
+  /* ============================================================
+     岛屿适配层：五处牧场地标 / 投影标签 / 点选 / 小狐狸向导 / 相机聚焦
+     （接在雪线牧场场景代码之后，共享同一闭包作用域）
+     ============================================================ */
+  var ISL = window.ISLAND || null;
+
+  var R_LM = [
+    { id: 'me', x: -27, z: 12, h: 6.6, prop: 'hut' },
+    { id: 'top', x: -5, z: -28, h: 7.4, prop: 'cheese' },
+    { id: 'alt', x: 31, z: 4, h: 11.8, prop: 'windmill' },
+    { id: 'new', x: 30, z: 38, h: 10.4, prop: 'station' },
+    { id: 'next', x: -33, z: 40, h: 5.4, prop: 'sign' }
+  ];
+
+  var R_MAT = {
+    ring: new THREE.MeshBasicMaterial({ color: 0xffe3a0, transparent: true, opacity: 0.78, side: THREE.DoubleSide, depthWrite: false }),
+    ringDone: new THREE.MeshBasicMaterial({ color: 0x9ff0b4, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }),
+    beam: new THREE.MeshBasicMaterial({ color: 0xffe9b8, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+    lamp: new THREE.MeshBasicMaterial({ color: 0xfff6d8 }),
+    pole: new THREE.MeshLambertMaterial({ color: 0x8a6435 }),
+    board: new THREE.MeshLambertMaterial({ color: 0xc79a5f }),
+    blade: new THREE.MeshLambertMaterial({ color: 0xdccfb4 }),
+    fox: new THREE.MeshLambertMaterial({ color: 0xd9772f }),
+    foxLight: new THREE.MeshLambertMaterial({ color: 0xf6f1e6 }),
+    foxDark: new THREE.MeshLambertMaterial({ color: 0x3b2a1f })
+  };
+
+  var R_pickables = [];
+  var R_anchors = {};
+  var R_rings = [];
+  var R_beams = [];
+  var R_markers = [];
+  var R_lastWeather = '';
+  var R_spin = 0.06;
+  var R_spinStop = false;
+  var R_target = new THREE.Vector3(0, 6, 0);
+  var R_targetWant = new THREE.Vector3(0, -11, -2);
+  var R_focusId = null;
+  var R_clock = 0;
+
+  function rMesh(geo, mat) {
+    var m = new THREE.Mesh(geo, mat);
+    m.castShadow = true;
+    m.receiveShadow = false;
+    return m;
+  }
+  function tagPick(obj, id) {
+    obj.traverse(function (o) { if (o.isMesh) { o.userData.nodeId = id; R_pickables.push(o); } });
+  }
+
+  /* ---------- 风车（备选路径的地标载体） ---------- */
+  function R_makeWindmill(x, z, local) {
+    var g = new THREE.Group();
+    var base = rMesh(new THREE.CylinderGeometry(2.4, 2.9, 1.2, 12), M.stone);
+    base.position.y = 0.6; g.add(base);
+    var tower = rMesh(new THREE.CylinderGeometry(1.15, 2.1, 6.6, 14), M.woodLight);
+    tower.position.y = 4.2; g.add(tower);
+    var cap = rMesh(new THREE.ConeGeometry(1.5, 1.9, 14), M.roofRed);
+    cap.position.y = 8.4; g.add(cap);
+    var hub = new THREE.Group();
+    hub.position.set(0, 8.1, 1.35);
+    var axle = rMesh(new THREE.CylinderGeometry(0.16, 0.16, 1.0, 8), M.woodDark);
+    axle.rotation.x = Math.PI / 2; axle.position.z = -0.5; hub.add(axle);
+    for (var i = 0; i < 4; i++) {
+      var arm = new THREE.Group();
+      arm.rotation.z = i * Math.PI / 2;
+      var spar = rMesh(new THREE.BoxGeometry(0.16, 5.4, 0.12), R_MAT.pole);
+      spar.position.y = 2.7; arm.add(spar);
+      var sail = rMesh(new THREE.BoxGeometry(0.9, 4.2, 0.06), R_MAT.blade);
+      sail.position.set(0.55, 3.0, 0.02); arm.add(sail);
+      hub.add(arm);
+    }
+    g.add(hub);
+    if (local) { g.position.set(0, 0, 0); } else { g.position.set(x, groundY(x, z), z); scene.add(g); }
+    addUpdater(function (dt) { hub.rotation.z -= dt * 0.42; });
+    return g;
+  }
+
+  /* ---------- 路标牌（第一步的地标载体） ---------- */
+  function R_makeSignpost(x, z, local) {
+    var g = new THREE.Group();
+    var pole = rMesh(new THREE.CylinderGeometry(0.19, 0.23, 4.4, 8), R_MAT.pole);
+    pole.position.y = 2.2; g.add(pole);
+    var dirs = [[-0.55, 1.0], [0.5, 2.1], [2.35, 3.1]];
+    for (var i = 0; i < dirs.length; i++) {
+      var b = rMesh(new THREE.BoxGeometry(1.9, 0.52, 0.14), R_MAT.board);
+      b.position.set(Math.cos(dirs[i][0]) * 0.85, dirs[i][1], Math.sin(dirs[i][0]) * 0.85);
+      b.rotation.y = -dirs[i][0];
+      g.add(b);
+    }
+    var cap = rMesh(new THREE.ConeGeometry(0.3, 0.5, 8), M.roofDark);
+    cap.position.y = 4.55; g.add(cap);
+    if (local) { g.position.set(0, 0, 0); } else { g.position.set(x, groundY(x, z), z); scene.add(g); }
+    return g;
+  }
+
+  /* ---------- 地标标记（光环 + 光柱 + 灯珠） ---------- */
+  function R_buildMarkers() {
+    for (var i = 0; i < R_LM.length; i++) {
+      var a = R_LM[i];
+      var gy = groundY(a.x, a.z);
+      var holder = new THREE.Group();
+      holder.position.set(a.x, gy, a.z);
+
+      var ring = new THREE.Mesh(new THREE.RingGeometry(1.75, 2.15, 40), R_MAT.ring.clone());
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.08;
+      holder.add(ring);
+      R_rings.push(ring);
+
+      var beam = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 1.55, a.h, 16, 1, true), R_MAT.beam.clone());
+      beam.position.y = a.h / 2 + 0.1;
+      holder.add(beam);
+      R_beams.push(beam);
+
+      var lamp = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), R_MAT.lamp.clone());
+      lamp.position.y = a.h + 0.2;
+      holder.add(lamp);
+
+      if (a.prop === 'windmill') { var wm = R_makeWindmill(0, 0, true); wm.scale.setScalar(1.5); holder.add(wm); }
+      if (a.prop === 'sign') { var sp = R_makeSignpost(0, 0, true); sp.scale.setScalar(1.5); holder.add(sp); }
+
+      scene.add(holder);
+      tagPick(holder, a.id);
+      R_markers.push(holder);
+      R_anchors[a.id] = new THREE.Vector3(a.x, gy + a.h + 0.6, a.z);
+    }
+  }
+  R_buildMarkers();
+
+  /* ---------- 投影标签 DOM ---------- */
+  var R_labelsBox = document.getElementById('labels');
+  var R_vec = new THREE.Vector3();
+  function R_makeTags() {
+    if (!R_labelsBox) return;
+    for (var i = 0; i < R_LM.length; i++) {
+      (function (a) {
+        var n = (ISL && ISL.meta[a.id]) || {};
+        var el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'tag';
+        el.setAttribute('data-id', a.id);
+        el.innerHTML = '<span class="tag-k">' + (n.kicker || '') + '</span><span class="tag-t">' +
+          (n.label || '') + '</span>';
+        el.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          R_spinStop = true;
+          if (ISL) ISL.openNode(a.id);
+        });
+        el.addEventListener('mouseenter', function () { el.classList.add('hover'); });
+        el.addEventListener('mouseleave', function () { el.classList.remove('hover'); });
+        R_labelsBox.appendChild(el);
+        if (ISL && ISL.registerTag) ISL.registerTag(a.id, el);
+        a.el = el;
+      })(R_LM[i]);
+    }
+  }
+  R_makeTags();
+
+  /* ---------- 小狐狸向导 ---------- */
+  function R_makeFox() {
+    var g = new THREE.Group();
+    var body = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.52, 1.15), R_MAT.fox);
+    body.position.y = 0.62; body.castShadow = true; g.add(body);
+    var chest = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.34, 0.3), R_MAT.foxLight);
+    chest.position.set(0, 0.5, 0.55); g.add(chest);
+    var head = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.48, 0.5), R_MAT.fox);
+    head.position.set(0, 1.0, 0.6); head.castShadow = true; g.add(head);
+    var snout = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.22, 0.3), R_MAT.foxLight);
+    snout.position.set(0, 0.94, 0.9); g.add(snout);
+    var nose = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.08), R_MAT.foxDark);
+    nose.position.set(0, 0.96, 1.04); g.add(nose);
+    for (var s = -1; s <= 1; s += 2) {
+      var ear = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.34, 4), R_MAT.fox);
+      ear.position.set(s * 0.17, 1.32, 0.58); g.add(ear);
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.36, 0.16), R_MAT.foxDark);
+      leg.position.set(s * 0.2, 0.2, 0.4); g.add(leg);
+      var leg2 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.36, 0.16), R_MAT.foxDark);
+      leg2.position.set(s * 0.2, 0.2, -0.4); g.add(leg2);
+      var eye = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.05), R_MAT.foxDark);
+      eye.position.set(s * 0.14, 1.06, 0.86); g.add(eye);
+    }
+    var tail = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.95, 6), R_MAT.fox);
+    tail.position.set(0, 0.72, -0.78);
+    tail.rotation.x = -Math.PI / 2.4;
+    g.add(tail);
+    var tip = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 6), R_MAT.foxLight);
+    tip.position.set(0, 0.9, -1.16); tip.rotation.x = -Math.PI / 2.4; g.add(tip);
+    var shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: 0.4, depthWrite: false }));
+    shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.04; g.add(shadow);
+    var hit = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.8, 2.8), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.position.set(0, 0.85, 0); g.add(hit);
+    return g;
+  }
+
+  var R_fox = { g: R_makeFox(), x: -1.0, z: 6.0, tx: -1.0, tz: 6.0, moving: false, pending: null, phase: 0, leg: 0 };
+  R_fox.g.position.set(R_fox.x, groundY(R_fox.x, R_fox.z), R_fox.z);
+  scene.add(R_fox.g);
+  tagPick(R_fox.g, '__fox__');
+
+  function R_foxWalkTo(id, openAfter) {
+    var lm = null;
+    for (var i = 0; i < R_LM.length; i++) if (R_LM[i].id === id) lm = R_LM[i];
+    if (!lm) return;
+    R_fox.tx = lm.x + 2.6;
+    R_fox.tz = lm.z + 2.8;
+    R_fox.moving = true;
+    R_fox.pending = openAfter ? id : null;
+    R_spinStop = true;
+  }
+
+  /* ---------- 相机聚焦 ---------- */
+  function R_focus(id) {
+    var a = null;
+    for (var i = 0; i < R_LM.length; i++) if (R_LM[i].id === id) a = R_LM[i];
+    if (!a) return;
+    R_focusId = id;
+    R_targetWant.set(a.x, groundY(a.x, a.z) + a.h * 0.42, a.z);
+    cam.tDist = 128;
+    cam.tEl = 0.34;
+    cam.tAz = Math.atan2(a.x - R_targetWant.x * 0.2, a.z - R_targetWant.z * 0.2) * 0.55 + 0.06;
+    R_spinStop = true;
+  }
+  function R_focusHome() {
+    R_focusId = null;
+    R_targetWant.set(0, -11, -2);
+    cam.tDist = 332;
+    cam.tEl = 0.34;
+    cam.tAz = 0.15;
+  }
+
+  /* ---------- 变异 UI 的关闭与说话，方便联动 ---------- */
+  if (ISL) {
+    var R_uiClose = ISL.closePanel;
+    ISL.closePanel = function () {
+      R_uiClose();
+      R_focusHome();
+    };
+    ISL.onClosed = function () { R_focusHome(); };
+    ISL.focus = R_focus;
+    ISL.intro = function () {
+      R_spinStop = false;
+      var t = ISL.nextTarget ? ISL.nextTarget() : 'me';
+      var n = (ISL.meta && ISL.meta[t]) || {};
+      ISL.say('我是这儿的向导。先看「' + ((n.kicker || '') + ' ' + (n.label || '')).trim() + '」，点地标或者点我。', 4600);
+      R_foxWalkTo(t, false);
+    };
+  }
+
+  /* ---------- 点选与拖拽分离 ---------- */
+  var R_down = { x: 0, y: 0, t: 0, moved: 0 };
+  var R_ray = new THREE.Raycaster();
+  el.addEventListener('pointerdown', function (e) {
+    R_down.x = e.clientX; R_down.y = e.clientY; R_down.moved = 0; R_down.t = Date.now();
+    R_spinStop = true;
+  });
+  el.addEventListener('pointermove', function (e) {
+    if (!R_down.t) return;
+    R_down.moved = Math.max(R_down.moved, Math.abs(e.clientX - R_down.x) + Math.abs(e.clientY - R_down.y));
+  });
+  function R_pickByScreen(cx, cy) {
+    var best = null, bestD = 34;
+    for (var i = 0; i < R_LM.length; i++) {
+      var a = R_LM[i], v = R_anchors[a.id];
+      if (!v) continue;
+      var p = R_project(v);
+      if (p.z >= 1) continue;
+      var d = Math.abs(p.x - cx) + Math.abs(p.y - cy);
+      if (d < bestD) { bestD = d; best = a.id; }
+    }
+    if (R_fox && R_fox.g) {
+      var fv = new THREE.Vector3();
+      R_fox.g.getWorldPosition(fv);
+      fv.y += 1.0;
+      var fp = R_project(fv);
+      if (fp.z < 1) {
+        var fd = Math.abs(fp.x - cx) + Math.abs(fp.y - cy);
+        if (fd < bestD) { bestD = fd; best = '__fox__'; }
+      }
+    }
+    return best;
+  }
+
+  function R_handleTap(e) {
+    if (!R_down.t) return;
+    var dist = Math.abs(e.clientX - R_down.x) + Math.abs(e.clientY - R_down.y);
+    R_down.t = 0;
+    if (dist > 8) return;
+    var rect = renderer.domElement.getBoundingClientRect();
+    var ndc = new THREE.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      -((e.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    R_ray.setFromCamera(ndc, camera);
+    var hits = R_ray.intersectObjects(R_pickables, false);
+    var id = (hits.length && hits[0].object.userData.nodeId) ? hits[0].object.userData.nodeId
+      : R_pickByScreen(e.clientX, e.clientY);
+    if (!id) return;
+    if (id === '__fox__') {
+      var t = ISL && ISL.nextTarget ? ISL.nextTarget() : null;
+      if (t) {
+        var n = (ISL.meta && ISL.meta[t]) || {};
+        ISL.say('跟我来，去看「' + ((n.kicker || '') + ' ' + (n.label || '')).trim() + '」。', 3600);
+        R_foxWalkTo(t, true);
+      } else {
+        ISL.say('五处都点亮了。想重看，点任意地标就行。', 3400);
+      }
+      return;
+    }
+    if (ISL) ISL.openNode(id);
+  }
+  el.addEventListener('pointerup', R_handleTap);
+
+  /* ---------- 每帧更新：标签投影 / 地标呼吸 / 狐狸 / 相机 ---------- */
+  function R_project(v) {
+    R_vec.copy(v).project(camera);
+    return {
+      x: (R_vec.x * 0.5 + 0.5) * window.innerWidth,
+      y: (-R_vec.y * 0.5 + 0.5) * window.innerHeight,
+      z: R_vec.z
+    };
+  }
+
+  addUpdater(function (dt, clock) {
+    R_clock += dt;
+
+    /* 相机目标缓动 */
+    R_target.lerp(R_targetWant, Math.min(1, dt * 2.1));
+    camTarget.copy(R_target);
+
+    /* 开场缓慢自转 */
+    if (!R_spinStop) {
+      R_spin += dt * 0.045;
+      cam.tAz = R_spin;
+      if (R_spin > 0.5) R_spinStop = true;
+    }
+
+    /* 地标光环呼吸 */
+    for (var i = 0; i < R_rings.length; i++) {
+      var lm = R_LM[i];
+      var isLit = !!(ISL && ISL.lit && ISL.lit[lm.id]);
+      var ring = R_rings[i];
+      ring.material.color.setHex(isLit ? 0x9ff0b4 : 0xffe3a0);
+      ring.material.opacity = (isLit ? 0.7 : 0.5) + 0.18 * Math.sin(R_clock * 1.6 + i * 1.1);
+      var s = 1 + 0.03 * Math.sin(R_clock * 1.6 + i * 1.1);
+      ring.scale.set(s, s, s);
+      R_beams[i].material.opacity = (isLit ? 0.07 : 0.11) + 0.035 * Math.sin(R_clock * 1.1 + i * 1.7);
+    }
+
+    /* 标签投影 */
+    for (var j = 0; j < R_LM.length; j++) {
+      var a = R_LM[j];
+      if (!a.el) continue;
+      var anchor = R_anchors[a.id];
+      var p = R_project(anchor);
+      var visible = p.z < 1 && p.x > -160 && p.x < window.innerWidth + 160 && p.y > -80 && p.y < window.innerHeight + 80;
+      if (!visible) { a.el.style.display = 'none'; continue; }
+      a.el.style.display = '';
+      a.el.style.left = p.x.toFixed(1) + 'px';
+      a.el.style.top = p.y.toFixed(1) + 'px';
+    }
+
+    /* 狐狸行走 */
+    var fx = R_fox;
+    if (fx.moving) {
+      var dx = fx.tx - fx.x, dz = fx.tz - fx.z;
+      var d = Math.sqrt(dx * dx + dz * dz);
+      var step = 7.6 * dt;
+      if (d <= step || d < 0.15) {
+        fx.x = fx.tx; fx.z = fx.tz; fx.moving = false;
+        if (fx.pending && ISL) {
+          var pid = fx.pending; fx.pending = null;
+          setTimeout(function () { ISL.openNode(pid); }, 220);
+        }
+      } else {
+        fx.x += dx / d * step;
+        fx.z += dz / d * step;
+        fx.g.rotation.y = Math.atan2(dx, dz);
+        fx.leg += dt * 12;
+      }
+    }
+    var gy = groundY(fx.x, fx.z);
+    var bob = fx.moving ? Math.abs(Math.sin(fx.leg)) * 0.09 : Math.sin(R_clock * 1.8) * 0.03;
+    fx.g.position.set(fx.x, gy + bob, fx.z);
+
+    /* 气泡跟随狐狸头顶 */
+    var bp = R_project(new THREE.Vector3(fx.x, gy + 2.05, fx.z));
+    var bub = document.getElementById('bubble');
+    if (bub) {
+      bub.style.left = bp.x.toFixed(1) + 'px';
+      bub.style.top = bp.y.toFixed(1) + 'px';
+    }
+
+    /* 天气按钮态同步 */
+    if (state && state.weather !== R_lastWeather) {
+      R_lastWeather = state.weather;
+      var btns = document.querySelectorAll('[data-weather]');
+      for (var k = 0; k < btns.length; k++) {
+        btns[k].classList.toggle('on', btns[k].getAttribute('data-weather') === state.weather);
+      }
+    }
+  });
+
+  /* 让场景也可被外部调试 */
+  window.RANCH = {
+    scene: scene, camera: camera, cam: cam, camTarget: camTarget,
+    state: state, landmarks: R_LM, anchors: R_anchors, fox: R_fox,
+    focus: R_focus, focusHome: R_focusHome
+  };
+
+
+})();
+
+</script>
+</body>
+</html>
