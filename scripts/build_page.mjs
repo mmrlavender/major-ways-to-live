@@ -7,6 +7,11 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = resolve(HERE, "..", "assets", "template.html");
 
+/* 统一退出：同步写出后再退出，避免 process.exit 在管道/CI 下截断输出。 */
+function die(code, payload) {
+  writeFileSync(2, (typeof payload === "string" ? payload : JSON.stringify(payload)) + "\n");
+  process.exit(code);
+}
 function arg(name, fallback) {
   const i = process.argv.indexOf("--" + name);
   return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
@@ -16,8 +21,7 @@ const dataPath = arg("data", "");
 const outPath = arg("out", "");
 const indexNo = arg("index", "04");
 if (!dataPath || !outPath) {
-  console.error("缺少参数：--data <data.json> --out <输出.html>");
-  process.exit(1);
+  die(1, "缺少参数：--data <data.json> --out <输出.html>");
 }
 
 const data = JSON.parse(readFileSync(dataPath, "utf8"));
@@ -36,8 +40,7 @@ const NEED = ["name", "oneline", "access", "match", "cost", "next"];
   });
 });
 if (errs.length) {
-  console.error("数据校验失败：\n- " + errs.join("\n- "));
-  process.exit(2);
+  die(2, "数据校验失败：\n- " + errs.join("\n- "));
 }
 
 // ---- 注入 ----

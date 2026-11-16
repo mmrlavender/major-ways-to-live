@@ -30,6 +30,11 @@ const ROOT = resolve(HERE, "..");
 const TEMPLATE = join(ROOT, "assets", "template.html");
 const DATA_DIR = join(ROOT, "assets", "majors");
 
+/* 统一退出：同步写出后再退出，避免 process.exit 在管道/CI 下截断输出。 */
+function die(code, payload) {
+  writeFileSync(2, (typeof payload === "string" ? payload : JSON.stringify(payload)) + "\n");
+  process.exit(code);
+}
 function arg(name, fallback = "") {
   const i = process.argv.indexOf("--" + name);
   if (i === -1) return fallback;
@@ -47,20 +52,17 @@ const esc = (s) =>
 /* ---------- 1. 读画像 ---------- */
 const profilePath = arg("profile");
 if (!profilePath || !existsSync(profilePath)) {
-  console.error(JSON.stringify({ ok: false, msg: "缺少 --profile 或文件不存在" }));
-  process.exit(2);
+  die(2, { ok: false, msg: "缺少 --profile 或文件不存在" });
 }
 let profile;
 try {
   profile = JSON.parse(readFileSync(profilePath, "utf8").replace(/^\uFEFF/, ""));
 } catch (e) {
-  console.error(JSON.stringify({ ok: false, msg: "profile JSON 解析失败：" + e.message }));
-  process.exit(2);
+  die(2, { ok: false, msg: "profile JSON 解析失败：" + e.message });
 }
 const major = String(profile.major || "").trim();
 if (!major) {
-  console.error(JSON.stringify({ ok: false, msg: "profile.major 必填" }));
-  process.exit(2);
+  die(2, { ok: false, msg: "profile.major 必填" });
 }
 
 /* ---------- 2. 找专业数据 ---------- */
@@ -76,15 +78,14 @@ let hit =
   pool.find((x) => norm(major).includes(norm((x.data.major || "").slice(0, 3))));
 
 if (!hit) {
-  console.error(
-    JSON.stringify({
+  die(3,
+    {
       ok: false,
       code: 3,
       msg: "「" + major + "」不在专业库内",
       available: pool.map((x) => x.data.major),
-    })
+    }
   );
-  process.exit(3);
 }
 
 const majorsData = hit.data;

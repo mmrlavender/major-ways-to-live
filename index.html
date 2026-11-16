@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>专业的 N 种活法 · 我的职业探索岛</title>
+<meta name="description" content="输入一个专业名，生成该专业的多条职业路径，并渲染成一座可漫游的三维职业探索岛。">
+<style>
+  :root{
+    --ink:#1d3524; --ink-soft:#3f5747; --paper:#f6f8f1;
+    --green:#3f7d4e; --green-deep:#255539; --line:rgba(37,85,57,.14);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 520px at 50% -160px,#dcecd2 0%,rgba(220,236,210,0) 70%),
+      linear-gradient(180deg,#f6f8f1 0%,#eef4e6 100%);
+    color:var(--ink);
+    font:16px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:64px 24px 96px}
+  .kicker{
+    display:inline-block;font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--green);border:1px solid var(--line);border-radius:999px;
+    padding:4px 12px;background:rgba(255,255,255,.6);margin-bottom:20px;
+  }
+  h1{font-size:clamp(28px,5vw,44px);line-height:1.25;margin:0 0 14px;letter-spacing:-.01em}
+  h1 em{font-style:normal;color:var(--green-deep)}
+  .lede{font-size:18px;color:var(--ink-soft);margin:0 0 36px;max-width:42em}
+  .shots{display:grid;gap:18px;margin:0 0 40px}
+  figure{margin:0}
+  figure img{
+    width:100%;height:auto;display:block;border-radius:14px;
+    border:1px solid var(--line);background:#fff;
+    box-shadow:0 10px 30px -18px rgba(29,53,36,.45);
+  }
+  figcaption{font-size:14px;color:var(--ink-soft);margin-top:8px}
+  h2{font-size:20px;margin:44px 0 14px;letter-spacing:-.01em}
+  ul{margin:0;padding-left:1.2em}
+  li{margin:6px 0;color:var(--ink-soft)}
+  li strong{color:var(--ink);font-weight:600}
+  .cmd{
+    background:var(--green-deep);color:#eaf5e6;border-radius:14px;padding:18px 20px;
+    font:15px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    overflow-x:auto;white-space:pre-wrap;word-break:break-word;
+  }
+  .cmd .c{color:#a9c8a4}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:16px}
+  .card{background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card b{display:block;font-size:15px;margin-bottom:4px}
+  .card span{font-size:14px;color:var(--ink-soft)}
+  footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-soft)}
+  a{color:var(--green-deep);text-decoration:none;border-bottom:1px solid rgba(37,85,57,.3)}
+  a:hover{border-bottom-color:var(--green-deep)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="kicker">Marvis Skill</span>
+  <h1>专业的 <em>N 种活法</em><br>我的职业探索岛</h1>
+  <p class="lede">
+    输入一个专业名，生成这个专业的多条职业路径，并渲染成一座可以拖拽旋转、可以点地标、可以缩放的三维漫游页面。
+    产物是单文件 HTML，双击就开，断网也能用，方便直接发给学生或丢进群里。
+  </p>
+
+  <div class="shots">
+    <figure>
+      <img src="docs/images/overview.png" alt="职业探索岛全景：悬浮小岛、五处地标与牧场动物">
+      <figcaption>全景：悬浮小岛 + 五处地标（我的画像 / 最匹配的活法 / 备选路径 / 跳出去看的新职业 / 这周的第一步）</figcaption>
+    </figure>
+    <figure>
+      <img src="docs/images/closeup.png" alt="近景：牧人小屋、奶牛与像素小人在岛上活动">
+      <figcaption>近景：奶牛、山羊、绵羊、牧羊犬在岛上活动，小狐狸向导负责带路</figcaption>
+    </figure>
+    <figure>
+      <img src="docs/images/panorama.png" alt="拉远视角：云海与小岛断崖">
+      <figcaption>拉远：断崖、云海与天气切换（晴 / 阵雨 / 雾 / 飘雪）</figcaption>
+    </figure>
+  </div>
+
+  <h2>为什么学生会愿意看完</h2>
+  <div class="grid">
+    <div class="card"><b>不是一份表格</b><span>活法排在岛上，点一处地标看一段结论，比读 PDF 心里有底。</span></div>
+    <div class="card"><b>有动物在动</b><span>小狐狸向导、牧羊犬巡逻，画面不会死。</span></div>
+    <div class="card"><b>能自己改名</b><span>岛名按专业自动生成，学生自己也能改。</span></div>
+    <div class="card"><b>断网可用</b><span>three.js 内联，无任何外链，一个文件就是一整座岛。</span></div>
+  </div>
+
+  <h2>安装</h2>
+  <p>把这句口令发给你正在用的 Agent，它会自己拉取、安装、按流程带你做完：</p>
+  <div class="cmd"><span class="c"># 复制整句，链接换成你要的仓库</span>
+请安装这个 Skill 并帮我制作职业探索岛：https://github.com/mmrlavender/major-ways-to-live</div>
+
+  <h2>手动看一眼效果</h2>
+  <div class="cmd"><span class="c"># 需要 Node.js 20+，不用 npm install</span>
+node scripts/island.mjs --profile examples/profile-学前教育.json --out 示例-职业探索岛.html
+node --test tests/   <span class="c"># 53 项测试全部通过</span></div>
+
+  <h2>里面有什么</h2>
+  <ul>
+    <li><strong>25 个专业</strong>数据，共 <strong>152 条活法</strong>，每条都带角色、技能、入行方式、成本与下一步。</li>
+    <li><strong>23 条新职业 / 8 个方向</strong>，专治「我这个专业除了当老师还能干嘛」。</li>
+    <li><strong>四套模板</strong>：三维牧场岛（默认）、海洋岛、二维岛屿、海报风单页。</li>
+    <li><strong>三组测试</strong>：数据契约、脚本冒烟、文档一致性，改完数据跑一遍就知道有没有写崩。</li>
+  </ul>
+
+  <footer>
+    详细用法见 <a href="README.md">README</a>，验收数字见 <a href="docs/verification.md">docs/verification.md</a>。代码 MIT 许可。
+  </footer>
+
+</div>
+</body>
+</html>

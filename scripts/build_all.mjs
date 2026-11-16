@@ -7,6 +7,11 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = resolve(HERE, "..", "assets", "template.html");
 
+/* 统一退出：同步写出后再退出，避免 process.exit 在管道/CI 下截断输出。 */
+function die(code, payload) {
+  writeFileSync(2, (typeof payload === "string" ? payload : JSON.stringify(payload)) + "\n");
+  process.exit(code);
+}
 function arg(name, fallback) {
   const i = process.argv.indexOf("--" + name);
   return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
@@ -15,8 +20,7 @@ function arg(name, fallback) {
 const dataDir = resolve(arg("data-dir", ""));
 const outDir = resolve(arg("out-dir", ""));
 if (!arg("data-dir") || !arg("out-dir")) {
-  console.error("缺少参数：--data-dir <目录> --out-dir <目录>");
-  process.exit(1);
+  die(1, "缺少参数：--data-dir <目录> --out-dir <目录>");
 }
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
@@ -217,4 +221,4 @@ lines: {
   for (const p of problems) console.error(`fail ${p}`);
   console.log(JSON.stringify(report, null, 2));
 }
-if (problems.length) process.exit(3);
+if (problems.length) process.exitCode = 3;

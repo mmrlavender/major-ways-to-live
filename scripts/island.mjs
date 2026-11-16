@@ -30,6 +30,11 @@ const THREE_SRC = join(ROOT, "assets", "vendor", "three.min.js");   // 内联用
 const DATA_DIR = join(ROOT, "assets", "majors");
 const JOBS_FILE = join(ROOT, "assets", "new-jobs.json");
 
+/* 统一退出：同步写出后再退出，避免 process.exit 在管道/CI 下截断输出。 */
+function die(code, payload) {
+  writeFileSync(2, (typeof payload === "string" ? payload : JSON.stringify(payload)) + "\n");
+  process.exit(code);
+}
 function arg(name, fallback = "") {
   const i = process.argv.indexOf("--" + name);
   if (i === -1) return fallback;
@@ -46,20 +51,17 @@ const esc = (s) =>
 /* ---------- 1. 读画像 ---------- */
 const profilePath = arg("profile");
 if (!profilePath || !existsSync(profilePath)) {
-  console.error(JSON.stringify({ ok: false, msg: "缺少 --profile 或文件不存在" }));
-  process.exit(2);
+  die(2, { ok: false, msg: "缺少 --profile 或文件不存在" });
 }
 let profile;
 try {
   profile = JSON.parse(readFileSync(profilePath, "utf8").replace(/^\uFEFF/, ""));
 } catch (e) {
-  console.error(JSON.stringify({ ok: false, msg: "profile JSON 解析失败：" + e.message }));
-  process.exit(2);
+  die(2, { ok: false, msg: "profile JSON 解析失败：" + e.message });
 }
 const major = String(profile.major || "").trim();
 if (!major) {
-  console.error(JSON.stringify({ ok: false, msg: "profile.major 必填" }));
-  process.exit(2);
+  die(2, { ok: false, msg: "profile.major 必填" });
 }
 
 /* 岛名：学生可自命名，统一收敛为「XX·职业探索岛」；--name 优先，其次 profile.islandName，最后用专业名兜底 */
@@ -85,15 +87,14 @@ const hit =
   pool.find((x) => norm(major).includes(norm((x.data.major || "").slice(0, 3))));
 
 if (!hit) {
-  console.error(
-    JSON.stringify({
+  die(3,
+    {
       ok: false,
       code: 3,
       msg: "「" + major + "」不在专业库内",
       available: pool.map((x) => x.data.major),
-    })
+    }
   );
-  process.exit(3);
 }
 const majorsData = hit.data;
 const paths = (majorsData.paths || []).map((p, i) => ({ ...p, __i: i }));
@@ -345,16 +346,14 @@ if (outPath) {
     tplPath = existsSync(TEMPLATE_OCEAN) ? TEMPLATE_OCEAN : TEMPLATE;
   }
   if (!existsSync(tplPath)) {
-    console.error(JSON.stringify({ ok: false, msg: "缺少模板文件 assets/island-ranch-template.html 或 assets/island-3d-ocean-template.html 或 assets/island-template.html" }));
-    process.exit(2);
+    die(2, { ok: false, msg: "缺少模板文件 assets/island-ranch-template.html 或 assets/island-3d-ocean-template.html 或 assets/island-template.html" });
   }
   const tpl = readFileSync(tplPath, "utf8");
   const json = JSON.stringify(island).replace(/</g, "\\u003c");
   let threeSrc = "";
   if (tplPath !== TEMPLATE) {
     if (!existsSync(THREE_SRC)) {
-      console.error(JSON.stringify({ ok: false, msg: "缺少 assets/vendor/three.min.js，请先下载 Three.js" }));
-      process.exit(2);
+      die(2, { ok: false, msg: "缺少 assets/vendor/three.min.js，请先下载 Three.js" });
     }
     threeSrc = readFileSync(THREE_SRC, "utf8").replace(/<\/script/gi, "<\\/script");
   }

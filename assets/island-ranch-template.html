@@ -2470,13 +2470,41 @@ body{
     return g;
   }
 
+  /* 牧场动物：登记下来，主循环里让它们缓慢绕小圈走动 + 呼吸起伏，避免整片牧场是静止摆件 */
+  var herdAnimals = [];
+
   function scatterAnimal(factory, x, z, rot, s) {
     var a = factory();
     a.position.set(x, groundY(x, z), z);
     a.rotation.y = rot === undefined ? rndRange(0, 6.28) : rot;
     if (s) a.scale.setScalar(s);
     scene.add(a);
+    herdAnimals.push({
+      obj: a,
+      bx: x,
+      bz: z,
+      r: rndRange(0.6, 1.5),
+      speed: rndRange(0.045, 0.105) * (Math.random() < 0.5 ? -1 : 1),
+      ph: rndRange(0, 6.28),
+      s: s || 1,
+      bob: rndRange(0, 6.28),
+    });
     return a;
+  }
+
+  function updateHerd(dt) {
+    for (var i = 0; i < herdAnimals.length; i++) {
+      var d = herdAnimals[i], o = d.obj;
+      d.ph += dt * d.speed;
+      var nx = d.bx + Math.cos(d.ph) * d.r;
+      var nz = d.bz + Math.sin(d.ph) * d.r;
+      o.position.set(nx, groundY(nx, nz), nz);
+      /* 朝行进方向：绕着中心画圆时，切线方向 = 角度 + 90° */
+      o.rotation.y = -d.ph + (d.speed > 0 ? Math.PI * 0.5 : -Math.PI * 0.5);
+      /* 呼吸：纵向 1.5% 起伏，肉眼几乎看不出位移，但整群不再是完全静止 */
+      var br = 1 + 0.015 * Math.sin(state.clock * 1.6 + d.bob);
+      o.scale.set(d.s, d.s * br, d.s);
+    }
   }
 
   /* ============================================================
@@ -3074,6 +3102,7 @@ body{
     applyWeather();
     updateWeather(dt);
     updatePixelChars(dt);
+    updateHerd(dt);
     for (var i = 0; i < updaters.length; i++) updaters[i](dt, state.clock);
     updateCamera(dt);
 

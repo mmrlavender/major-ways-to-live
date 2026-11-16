@@ -13,6 +13,11 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
 const TEMPLATE = resolve(ROOT, "assets", "template.html");
 
+/* 统一退出：同步写出后再退出，避免 process.exit 在管道/CI 下截断输出。 */
+function die(code, payload) {
+  writeFileSync(2, (typeof payload === "string" ? payload : JSON.stringify(payload)) + "\n");
+  process.exit(code);
+}
 function arg(name, def = null) {
   const i = process.argv.indexOf("--" + name);
   return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : def;
@@ -26,12 +31,10 @@ const profilePath = arg("profile");
 const catsWanted = (arg("categories") || "").split(/[,，\s]+/).filter(Boolean);
 
 if (!outPath) {
-  console.error("缺少 --out <输出文件路径>");
-  process.exit(2);
+  die(2, "缺少 --out <输出文件路径>");
 }
 if (!existsSync(JOBS_PATH)) {
-  console.error("缺少 assets/new-jobs.json");
-  process.exit(2);
+  die(2, "缺少 assets/new-jobs.json");
 }
 
 const bank = JSON.parse(readFileSync(JOBS_PATH, "utf8"));
@@ -48,8 +51,7 @@ jobs.forEach((j, i) => {
   if (!Array.isArray(j.skills) || !j.skills.length) problems.push(`#${i} ${j.name} 缺少 skills`);
 });
 if (problems.length) {
-  console.error("数据校验未通过：\n" + problems.join("\n"));
-  process.exit(3);
+  die(3, "数据校验未通过：\n" + problems.join("\n"));
 }
 
 /* ---------- 专业数据（用于关联度） ---------- */
@@ -178,8 +180,7 @@ let chosen = scored;
 if (catsWanted.length) {
   chosen = chosen.filter((j) => catsWanted.includes(j.category));
   if (!chosen.length) {
-    console.error("所选方向没有内容：" + catsWanted.join(","));
-    process.exit(4);
+    die(4, "所选方向没有内容：" + catsWanted.join(","));
   }
 }
 

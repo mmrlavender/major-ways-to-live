@@ -169,6 +169,7 @@ node scripts/build_all.mjs --data-dir assets/majors --out-dir "../major-ways"   
 
 ```
 major-ways-to-live/
+├── index.html                        # 展示页（开 Pages 后可直接看效果）
 ├── SKILL.md                          # 技能主文档：场景判断、访谈节奏、活法标准、版式契约、交付
 ├── references/
 │   ├── interview.md                  # 六题访谈题面
@@ -189,7 +190,20 @@ major-ways-to-live/
 │   ├── build_page.mjs                # 单专业通用页
 │   ├── build_all.mjs                 # 全校批量 + index.html
 │   └── explore.mjs                   # 新职业地图
-├── docs/images/                      # README 预览图
+├── examples/                         # 三份开箱可用的示例画像
+│   ├── profile-学前教育.json
+│   ├── profile-美术教育.json
+│   └── profile-食品营养与健康.json
+├── tests/                            # 数据契约 / 脚本冒烟 / 文档一致性
+│   ├── majors.test.mjs
+│   ├── island.test.mjs
+│   └── docs.test.mjs
+├── .github/workflows/verify.yml      # 每次 push 自动跑测试与自包含校验
+├── agents/openai.yaml                # Agent 平台上的展示名与默认指令
+├── docs/
+│   ├── images/                       # README 预览图
+│   └── verification.md               # 验收记录（实测数字）
+├── package.json                      # 零依赖，npm test / npm run sample
 ├── LICENSE                           # MIT
 └── .gitignore
 ```
@@ -206,6 +220,32 @@ node scripts/island.mjs --profile ./profile.json --json
 # 期望：ok:true, style:"3d", theme:"ranch", island_name:"小星星·职业探索岛"
 ls assets/vendor/three.min.js                         # 669,884 字节
 ```
+
+想先看效果再看文档，直接用仓库自带的示例画像：
+
+```bash
+node scripts/island.mjs --profile examples/profile-学前教育.json --out ./示例-职业探索岛.html
+```
+
+---
+
+## 质量与验收
+
+仓库自带三组测试，不需要装任何依赖（只用 Node 内置的 `node:test`）：
+
+```bash
+node --test tests/        # 或 npm test
+```
+
+| 测试文件 | 守住的东西 |
+| --- | --- |
+| `tests/majors.test.mjs` | 25 个专业 JSON 的字段契约：活法数、六类路径族取值、`roles` / `skills` 数量、23 条新职业的 `relatedMajors` 不指向不存在的专业 |
+| `tests/island.test.mjs` | 五个脚本真实跑一遍：三维 / `--flat` / `--theme ocean` 三种产出、退出码 2 与 3 的语义、产物必须是**单文件且无任何外链** |
+| `tests/docs.test.mjs` | 文档不会和文件脱节：SKILL.md 提到的 `references/*.md`、`scripts/*.mjs` 必须真的存在，README 里的图片、安装口令、专业数与活法数必须和数据一致 |
+
+改数据或改脚本后先跑一遍测试；`git push` 之后 GitHub Actions（`.github/workflows/verify.yml`）会在 Node 20 / 22 两个版本上再跑一遍，并额外校验产物自包含。
+
+最近一次实测结果（53 项全部通过、产物大小、已知未覆盖项）记在 [docs/verification.md](docs/verification.md)。
 
 ---
 
